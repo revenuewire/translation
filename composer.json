@@ -1,0 +1,22 @@
+{
+  "name": "rw/translation",
+  "type": "library",
+  "description": "RW Translation Service",
+  "homepage": "https://github.com/cosmostail/translation",
+  "license": "Apache License 2.0",
+  "authors": [
+    {
+      "name": "Scott Wang",
+      "email": "swang@revenuewire.com"
+    }
+  ],
+  "require": {
+    "aws/aws-sdk-php": "^3.23",
+    "predis/predis": "^1.1"
+  },
+  "autoload": {
+    "psr-4" : {
+      "RW\\" : "src/"
+    }
+  }
+}
