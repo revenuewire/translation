@@ -122,15 +122,17 @@ class Translation
      * @param $id
      * @param $text
      * @param $lang
+     * @param $needTranslate
      *
      * @return array
      */
-    private function getItem($id, $text, $lang)
+    private function getItem($id, $text, $lang, $needTranslate)
     {
         return [
             'id' => $id,
             't' => $text,
             'l' => $lang,
+            'n' => $needTranslate,
         ];
     }
 
@@ -170,7 +172,7 @@ class Translation
          * If it is the default language and we missed the cache, this means it is the first time we had this text
          */
         if ($lang == self::DefaultLanguage) {
-            $data = $this->getItem($id, $text, $lang);
+            $data = $this->getItem($id, $text, $lang, $needTranslate = false);
             $this->db->putItem(array(
                 'TableName' => $this->table,
                 'Item' => $this->marshaler->marshalItem($data),
@@ -190,17 +192,28 @@ class Translation
             'Key' => array(
                 'id' => array('S' => $id)
             ),
-            'ConsistentRead' => false,
-            'ProjectionExpression' => 'id, t',
+            'ConsistentRead' => false
         ));
 
         if (empty($result['Item'])) {
+            $data = $this->getItem($id, $text, $lang, $needTranslation = true);
+            $this->db->putItem(array(
+                'TableName' => $this->table,
+                'Item' => $this->marshaler->marshalItem($data),
+                'ReturnValues' => 'ALL_OLD'
+            ));
             $this->setCache($id, $text, 3600);
             return $text;
         }
 
         $data = $this->marshaler->unmarshalItem($result['Item']);
-        $this->setCache($id, $data['t']);
+        //if still need translation
+        if ($data['n'] == true) {
+            $this->setCache($id, $data['t'], 3600);
+        } else {
+            $this->setCache($id, $data['t']);
+        }
+
         return $data['t'];
     }
 
