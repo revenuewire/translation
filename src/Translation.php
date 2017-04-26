@@ -7,7 +7,9 @@ use Predis\Client;
 
 class Translation
 {
-    protected $app;
+    const DefaultLanguage = 'en';
+
+    public $dynamoSettings = array();
     protected $db;
     protected $marshaler;
     public $supportLanguages;
@@ -17,16 +19,29 @@ class Translation
     public $cache = null;
     public $cachePrefix = null;
 
-    function __construct($name, $supportLanguages = array('en'), $cache = null, $maxIdLength = 50)
+    /**
+     * Translation constructor.
+     *
+     * @param $dynamoSettings must consistent with region, version and table name.
+     * @param array $supportLanguages
+     * @param null $cache cache is recommended for performance. Only support Redis for now
+     * @param int $maxIdLength The max length you want to put for key. Note: If the key length is very small, you might run into collision. If it is too big, you wasted space.
+     */
+    function __construct($dynamoSettings, $supportLanguages = array('en'), $cache = null, $maxIdLength = 50)
     {
-        $this->app = $name;
+        if (empty($dynamoSettings)
+                || empty($dynamoSettings['table'])
+                || empty($dynamoSettings['region'])
+                || empty($dynamoSettings['version'])) {
+            throw new \InvalidArgumentException("DyanmoDB is required.");
+        }
 
         /** @var $db DynamoDbClient */
         $this->db = new DynamoDbClient(array(
-            "region" => "ca-central-1",
-            'version' => '2012-08-10',
+            "region" => $dynamoSettings['region'],
+            'version' => $dynamoSettings['version'],
         ));
-        $this->table = "translation_" . $this->app;
+        $this->table = $dynamoSettings['table'];
 
         /** @var marshaler Marshaler */
         $this->marshaler = new Marshaler();
@@ -57,12 +72,8 @@ class Translation
      *
      * @return array
      */
-    public function batchTranslate($messages = array(), $lang = "en", $namespace = "default")
+    public function batchTranslate($messages = array(), $lang = "en", $namespace = "t_")
     {
-        if ($this->app == null) {
-            return $messages;
-        }
-
         if (!in_array($lang, $this->supportLanguages)) {
             return $messages;
         }
@@ -73,18 +84,17 @@ class Translation
         foreach ($messages as $textId => $text) {
             $text = trim($text);
             if (empty($text)) {
-                throw new \InvalidArgumentException("Must provide a default text.");
+                throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $slugTextId = $this->getId($text, $textId);
-            if ($slugTextId != $textId) {
-                throw new \InvalidArgumentException("In Batch mode, the text id must be slugified and less than {$this->maxIdLength} characters.");
-            }
-            $id = $this->getHash($namespace, $lang, $slugTextId);
+            $id = $this->getHash($namespace, $lang, $text);
             $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
-            $slugTextIdMap[$id] = $slugTextId;
-            $slugTextIdMapReversed[$slugTextId] = $id;
+            $slugTextIdMap[$id] = $textId;
+            $slugTextIdMapReversed[$textId] = $id;
         }
 
+        /**
+         * If perfect cache hits, yeah~~
+         */
         if ($this->cache !== null) {
             $cacheKeys = array_keys($slugTextIdMap);
             $cachedResults = $this->getCacheMulti($cacheKeys);
@@ -98,53 +108,30 @@ class Translation
             }
         }
 
-        $results = $this->db->batchGetItem([
-            'RequestItems' => [
-                $this->table => [
-                    "Keys" => $batchKeys,
-                    'ConsistentRead' => false,
-                    'ProjectionExpression' => 'id, t',
-                ]
-            ]
-        ]);
-
         $resultMessages = [];
-        foreach ($results['Responses'][$this->table] as $response) {
-            $id = $response['id']['S'];
-            $text = $response['t']['S'];
-            $resultMessages[$slugTextIdMap[$id]] = $text;
+        foreach ($messages as $textId => $text) {
+            $resultMessages[$textId] = $this->translate($text, $lang,$namespace);
         }
 
-        $missingMessages = array_diff($messages, $resultMessages);
-        $batchData = [];
-        foreach ($missingMessages as $k => $v) {
-            $batchData[] = ['PutRequest' => [
-                "Item" => $this->marshaler->marshalItem([
-                    'id' => $slugTextIdMapReversed[$k],
-                    't' => $v,
-                    'meta' => [
-                        'app' => $this->app,
-                        'lang' => $lang,
-                        'namespace' => $namespace,
-                        'textId' => $k,
-                        'slug' => $k,
-                    ],
-                    's' => ($lang != 'en'),
-                    'lang' => $lang,
-                ])
-            ]];
-        }
-        if (count($batchData) > 0) {
-            $this->db->batchWriteItem([
-                'RequestItems' => [
-                    $this->table => $batchData
-                ]
-            ]);
-        }
-
-        $resultMessages = array_merge($messages, $resultMessages);
-        $this->setCacheBatch($resultMessages, $slugTextIdMapReversed);
         return $resultMessages;
+    }
+
+    /**
+     * Get Item
+     *
+     * @param $id
+     * @param $text
+     * @param $lang
+     *
+     * @return array
+     */
+    private function getItem($id, $text, $lang)
+    {
+        return [
+            'id' => $id,
+            't' => $text,
+            'l' => $lang,
+        ];
     }
 
     /**
@@ -152,29 +139,52 @@ class Translation
      *
      * @param $text
      * @param string $lang
-     * @param null $textId
      * @param string $namespace
      *
      * @return string
      */
-    public function translate($text, $lang = 'en', $textId = null, $namespace = "default")
+    public function translate($text, $lang = self::DefaultLanguage, $namespace = "t_")
     {
-        if ($this->app == null || !in_array($lang, $this->supportLanguages)) {
+        /**
+         * If language is not in supported languages, just return original text back
+         */
+        if (!in_array($lang, $this->supportLanguages)) {
             return $text;
         }
 
+        /**
+         * If the text is empty, return it with empty string.
+         */
         $text = trim($text);
         if (empty($text)) {
             return $text;
         }
 
-        $slugTextId = $this->getId($text, $textId);
-        $id = $this->getHash($namespace, $lang, $slugTextId);
+        $id = $this->getHash($namespace, $lang, $text);
 
         if ($this->hasCache($id)) {
             return $this->getCache($id);
         }
 
+        /**
+         * If it is the default language and we missed the cache, this means it is the first time we had this text
+         */
+        if ($lang == self::DefaultLanguage) {
+            $data = $this->getItem($id, $text, $lang);
+            $this->db->putItem(array(
+                'TableName' => $this->table,
+                'Item' => $this->marshaler->marshalItem($data),
+                'ReturnValues' => 'ALL_OLD'
+            ));
+
+            $this->setCache($id, $text);
+
+            return $text;
+        }
+
+        /**
+         * If it is not the default language, and we missed the cache
+         */
         $result = $this->db->getItem(array(
             'TableName' => $this->table,
             'Key' => array(
@@ -185,26 +195,7 @@ class Translation
         ));
 
         if (empty($result['Item'])) {
-            $data = [
-                'id' => $id,
-                't' => $text,
-                'meta' => [
-                    'app' => $this->app,
-                    'lang' => $lang,
-                    'namespace' => $namespace,
-                    'textId' => $textId,
-                    'slug' => $slugTextId
-                ],
-                's' => ($lang != 'en'), //need translate if not en
-                'lang' => $lang,
-            ];
-            $this->db->putItem(array(
-                'TableName' => $this->table,
-                'Item' => $this->marshaler->marshalItem($data),
-                'ReturnValues' => 'ALL_OLD'
-            ));
-
-            $this->setCache($id, $text);
+            $this->setCache($id, $text, 3600);
             return $text;
         }
 
@@ -218,30 +209,20 @@ class Translation
      *
      * @param $namespace
      * @param $lang
-     * @param $id
+     * @param $text
      *
      * @return string
+     * @internal param $id
+     *
      */
-    public function getHash($namespace, $lang, $id)
+    public function getHash($namespace, $lang, $text)
     {
+        $text = trim($text);
+        $id = \Utils::slugify(strlen($text) > $this->maxIdLength
+                ? substr($text, 0, $this->maxIdLength) . hash('crc32', substr($text, $this->maxIdLength+1))
+                : $text);
+
         return hash('ripemd160', implode('|:|', array($namespace, $lang, $id)));
-    }
-
-    /**
-     * Get ID
-     *
-     * @param $text
-     * @param null $id
-     *
-     * @return mixed|string
-     */
-    public function getId($text, $id = null)
-    {
-        if (!empty($id)) {
-            return \Utils::slugify($id);
-        }
-
-        return \Utils::slugify(strlen($text) > $this->maxIdLength ? substr($text, 0, $this->maxIdLength) . hash('crc32', substr($text, 11)) : $text);
     }
 
     /**
@@ -262,10 +243,13 @@ class Translation
      * @param $id
      * @param $text
      */
-    private function setCache($id, $text)
+    private function setCache($id, $text, $expiry = null)
     {
         if ($this->cache !== null) {
             $this->cache->set($this->getCacheKey($id), $text);
+            if (!empty($expiry)) {
+                $this->cache->expire($this->getCacheKey($id), $expiry);
+            }
         }
     }
 
