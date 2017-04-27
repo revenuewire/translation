@@ -78,6 +78,10 @@ class Translation
             return $messages;
         }
 
+        if (empty($messages)) {
+            return $messages;
+        }
+
         $batchKeys = [];
         $slugTextIdMap = [];
         $slugTextIdMapReversed = [];
@@ -138,11 +142,14 @@ class Translation
                 ]];
             }
             if (count($batchData) > 0) {
-                $this->db->batchWriteItem([
-                    'RequestItems' => [
-                        $this->table => $batchData
-                    ]
-                ]);
+                $batchChunks = array_chunk($batchData, 25);
+                foreach ($batchChunks as $chunk) {
+                    $this->db->batchWriteItem([
+                        'RequestItems' => [
+                            $this->table => $chunk
+                        ]
+                    ]);
+                }
             }
             $this->setCacheBatch($resultMessages, $slugTextIdMapReversed);
         } else {
