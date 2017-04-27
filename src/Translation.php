@@ -108,9 +108,45 @@ class Translation
             }
         }
 
+        $results = $this->db->batchGetItem([
+            'RequestItems' => [
+                $this->table => [
+                    "Keys" => $batchKeys,
+                    'ConsistentRead' => false,
+                    'ProjectionExpression' => 'id, t',
+                ]
+            ]
+        ]);
         $resultMessages = [];
-        foreach ($messages as $textId => $text) {
-            $resultMessages[$textId] = $this->translate($text, $lang,$namespace);
+        foreach ($results['Responses'][$this->table] as $response) {
+            $id = $response['id']['S'];
+            $text = $response['t']['S'];
+            $resultMessages[$slugTextIdMap[$id]] = $text;
+        }
+
+        $missingMessages = array_diff($messages, $resultMessages);
+        $resultMessages = array_merge($messages, $resultMessages);
+        if ($lang == self::DefaultLanguage) {
+            $batchData = [];
+            foreach ($missingMessages as $k => $v) {
+                $batchData[] = ['PutRequest' => [
+                    "Item" => $this->marshaler->marshalItem([
+                        'id' => $slugTextIdMapReversed[$k],
+                        't' => $v,
+                        'l' => $lang,
+                    ])
+                ]];
+            }
+            if (count($batchData) > 0) {
+                $this->db->batchWriteItem([
+                    'RequestItems' => [
+                        $this->table => $batchData
+                    ]
+                ]);
+            }
+            $this->setCacheBatch($resultMessages, $slugTextIdMapReversed);
+        } else {
+            $this->setCacheBatch($resultMessages, $slugTextIdMapReversed, 3600);
         }
 
         return $resultMessages;
@@ -149,26 +185,6 @@ class Translation
         }
 
         /**
-         * If it is the default language and we missed the cache, this means it is the first time we had this text
-         */
-        if ($lang == self::DefaultLanguage) {
-            $data = [
-                'id' => $id,
-                't' => $text,
-                'l' => $lang,
-            ];
-            $this->db->putItem(array(
-                'TableName' => $this->table,
-                'Item' => $this->marshaler->marshalItem($data),
-                'ReturnValues' => 'ALL_OLD'
-            ));
-
-            $this->setCache($id, $text);
-
-            return $text;
-        }
-
-        /**
          * If it is not the default language, and we missed the cache
          */
         $result = $this->db->getItem(array(
@@ -180,6 +196,26 @@ class Translation
         ));
 
         if (empty($result['Item'])) {
+            /**
+             * If it is the default language and we missed the cache, this means it is the first time we had this text
+             */
+            if ($lang == self::DefaultLanguage) {
+                $data = [
+                    'id' => $id,
+                    't' => $text,
+                    'l' => $lang,
+                ];
+                $this->db->putItem(array(
+                    'TableName' => $this->table,
+                    'Item' => $this->marshaler->marshalItem($data),
+                    'ReturnValues' => 'ALL_OLD'
+                ));
+
+                $this->setCache($id, $text);
+
+                return $text;
+            }
+
             $this->setCache($id, $text, 3600);
             return $text;
         }
@@ -245,7 +281,7 @@ class Translation
      * @param $messages
      * @param $slugTextIdMapReversed
      */
-    private function setCacheBatch($messages, $slugTextIdMapReversed)
+    private function setCacheBatch($messages, $slugTextIdMapReversed, $ttl = null)
     {
         if ($this->cache !== null) {
             $cacheData = [];
@@ -253,6 +289,12 @@ class Translation
                 $cacheData[$this->getCacheKey($slugTextIdMapReversed[$k])] = $v;
             }
             $this->cache->mset($cacheData);
+
+            if (!empty($ttl)) {
+                foreach ($messages as $k => $v) {
+                    $this->cache->expire($this->getCacheKey($slugTextIdMapReversed[$k]), $ttl);
+                }
+            }
         }
     }
 
