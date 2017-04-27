@@ -9,11 +9,16 @@ class Translation
 {
     const DefaultLanguage = 'en';
 
+    /**
+     * The max length you want to put for key. Note: If the key length is very small, you might run into collision.
+     * If it is too big, you wasted space.
+     */
+    const keyLength = 50;
+
     public $dynamoSettings = array();
     protected $db;
     protected $marshaler;
     public $supportLanguages;
-    public $maxIdLength;
 
     /** @var $cache Client  */
     public $cache = null;
@@ -25,9 +30,8 @@ class Translation
      * @param $dynamoSettings must consistent with region, version and table name.
      * @param array $supportLanguages
      * @param null $cache cache is recommended for performance. Only support Redis for now
-     * @param int $maxIdLength The max length you want to put for key. Note: If the key length is very small, you might run into collision. If it is too big, you wasted space.
      */
-    function __construct($dynamoSettings, $supportLanguages = array('en'), $cache = null, $maxIdLength = 50)
+    function __construct($dynamoSettings, $supportLanguages = array('en'), $cache = null)
     {
         if (empty($dynamoSettings)
                 || empty($dynamoSettings['table'])
@@ -46,7 +50,6 @@ class Translation
         /** @var marshaler Marshaler */
         $this->marshaler = new Marshaler();
 
-        $this->maxIdLength = $maxIdLength;
         $this->supportLanguages = $supportLanguages;
 
         if ($cache !== null) {
@@ -247,8 +250,8 @@ class Translation
     public function getHash($namespace, $lang, $text)
     {
         $text = trim($text);
-        $id = \Utils::slugify(strlen($text) > $this->maxIdLength
-                ? substr($text, 0, $this->maxIdLength) . hash('crc32', substr($text, $this->maxIdLength+1))
+        $id = \Utils::slugify(strlen($text) > self::keyLength
+                ? substr($text, 0, self::keyLength) . hash('crc32', substr($text, self::keyLength+1))
                 : $text);
 
         return hash('ripemd160', implode('|:|', array($namespace, $lang, $id)));
@@ -337,9 +340,10 @@ class Translation
      */
     private function getCacheMulti($keys)
     {
-        array_walk($keys, function ($item1, &$key, $prefix){
-            $key = $prefix.$key;
-        }, $this->cachePrefix);
-        return $this->cache->mget($keys);
+        $cacheKeys = [];
+        foreach ($keys as $key) {
+            $cacheKeys[] = $this->getCacheKey($key);
+        }
+        return $this->cache->mget($cacheKeys);
     }
 }
