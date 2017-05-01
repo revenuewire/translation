@@ -1,10 +1,12 @@
 <?php
 namespace Models;
+use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation Project
  */
-class TranslationProject
+class TranslationProject extends Model
 {
     /**
      * DynamoDB Schema Definition
@@ -69,27 +71,32 @@ class TranslationProject
     public $projectData;
 
     /**
-     * The project size. Mostly due to a limit in the service provider side. For example, OHT only allow a maximum
-     * of 30 translation requests per projects
+     * Get Unique ID
      *
-     * @var $size integer
+     * @return string
      */
-    public $size;
+    public static function idFactory()
+    {
+        return uniqid();
+    }
 
     /**
      * @return string
      */
     public function getId()
     {
-        return $this->id;
+        return $this->data["id"];
     }
 
     /**
      * @param string $id
+     *
+     * @return TranslationProject
      */
     public function setId($id)
     {
-        $this->id = $id;
+        $this->data["id"] = $id;
+        return $this;
     }
 
     /**
@@ -97,15 +104,18 @@ class TranslationProject
      */
     public function getTargetLanguage()
     {
-        return $this->targetLanguage;
+        return $this->data["targetLanguage"];
     }
 
     /**
      * @param string $targetLanguage
+     *
+     * @return TranslationProject
      */
     public function setTargetLanguage($targetLanguage)
     {
-        $this->targetLanguage = $targetLanguage;
+        $this->data["targetLanguage"] = $targetLanguage;
+        return $this;
     }
 
     /**
@@ -113,15 +123,18 @@ class TranslationProject
      */
     public function getCreated()
     {
-        return $this->created;
+        return $this->data["created"];
     }
 
     /**
      * @param int $created
+     *
+     * @return TranslationProject
      */
     public function setCreated($created)
     {
-        $this->created = $created;
+        $this->data["created"] = $created;
+        return $this;
     }
 
     /**
@@ -129,15 +142,18 @@ class TranslationProject
      */
     public function getModified()
     {
-        return $this->modified;
+        return $this->data["modified"];
     }
 
     /**
      * @param int $modified
+     *
+     * @return TranslationProject
      */
     public function setModified($modified)
     {
-        $this->modified = $modified;
+        $this->data["modified"] = $modified;
+        return $this;
     }
 
     /**
@@ -145,15 +161,18 @@ class TranslationProject
      */
     public function getStatus()
     {
-        return $this->status;
+        return $this->data["status"];
     }
 
     /**
      * @param string $status
+     *
+     * @return TranslationProject
      */
     public function setStatus($status)
     {
-        $this->status = $status;
+        $this->data["status"] = $status;
+        return $this;
     }
 
     /**
@@ -161,30 +180,17 @@ class TranslationProject
      */
     public function getProjectData()
     {
-        return $this->projectData;
+        return $this->data["projectData"];
     }
 
     /**
      * @param mixed $projectData
+     *
+     * @return TranslationProject
      */
     public function setProjectData($projectData)
     {
-        $this->projectData = $projectData;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSize()
-    {
-        return $this->size;
-    }
-
-    /**
-     * @param int $size
-     */
-    public function setSize($size)
-    {
-        $this->size = $size;
+        $this->data["projectData"] = $projectData;
+        return $this;
     }
 }

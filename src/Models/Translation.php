@@ -1,11 +1,15 @@
 <?php
 namespace Models;
+use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation
  */
-class Translation
+class Translation extends Model
 {
+    const DEFAULT_LANGUAGE_CODE = "en";
+
     /**
      * DynamoDB Schema Definition
      */
@@ -68,19 +72,56 @@ class Translation
     public $l;
 
     /**
+     * Get ALl Texts By Language
+     *
+     * @param string $lang
+     * @param null $lastEvaluatedKey
+     *
+     * @return \Aws\Result
+     */
+    public static function getAllTextsByLanguage($config, $lang = self::DEFAULT_LANGUAGE_CODE, $lastEvaluatedKey = null)
+    {
+        $dbClient = new DynamoDbClient([
+            "region" => $config['region'],
+            "version" => $config['version'],
+        ]);
+
+        $scanAttributes = array(
+            'TableName' => $config['name'],
+            'IndexName' => 'l-index',
+            'ExpressionAttributeNames' => array(
+                '#l' => 'l'
+            ),
+            'ExpressionAttributeValues' => array(
+                ':l' => array('S' => $lang),
+            ),
+            'FilterExpression' => '#l = :l',
+            'ScanIndexForward' => true
+        );
+        if ($lastEvaluatedKey != null) {
+            $scanAttributes['ExclusiveStartKey'] = $lastEvaluatedKey;
+        }
+
+        return $dbClient->scan($scanAttributes);
+    }
+
+    /**
      * @return string
      */
     public function getId()
     {
-        return $this->id;
+        return $this->data["id"];
     }
 
     /**
      * @param string $id
+     *
+     * @return Translation
      */
     public function setId($id)
     {
-        $this->id = $id;
+        $this->data["id"] = $id;
+        return $this;
     }
 
     /**
@@ -88,15 +129,18 @@ class Translation
      */
     public function getText()
     {
-        return $this->t;
+        return $this->data["t"];
     }
 
     /**
      * @param string $t
+     *
+     * @return Translation
      */
     public function setText($t)
     {
-        $this->t = $t;
+        $this->data["t"] = $t;
+        return $this;
     }
 
     /**
@@ -104,14 +148,19 @@ class Translation
      */
     public function getLang()
     {
-        return $this->l;
+        return $this->data["l"];
     }
 
     /**
      * @param string $l
+     *
+     * @return Translation
      */
     public function setLang($l)
     {
-        $this->l = $l;
+        $this->data["l"] = $l;
+        return $this;
     }
+
+
 }
