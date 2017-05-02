@@ -1,18 +1,22 @@
 <?php
 /**
  * To Create tables that need for this translation services, run
- * php init_dynamo_table.php --translation=[TABLE_NAME] --translation_queue=[TABLE_NAME] --translation_project=[TABLE_NAME] [aws_region_code]
+ * php init_dynamo_table.php --translation=[TABLE_NAME] --translation_queue=[TABLE_NAME] \
+ *      --translation_project=[TABLE_NAME] --region=[aws_region_code]
  */
 require_once ("./../vendor/autoload.php");
 date_default_timezone_set( 'UTC' );
 
-$options = getopt('', array('translation::', 'translation_queue::', 'translation_project::'));
-$numOfOptions = count($options);
-$region = $argv[$numOfOptions+1];
-if (empty($region)) {
-    echo "Please specify your region\n";
+$options = getopt('', array('translation::', 'translation_queue::', 'translation_project::', 'region::'));
+
+/**
+ * Check configuration
+ */
+if (empty($options['region'])) {
+    echo "Please specify AWS region\n";
     exit;
 }
+$region = $options['region'];
 
 $db = new \Aws\DynamoDb\DynamoDbClient([
     "region" => $region,

@@ -1,7 +1,5 @@
 <?php
 namespace Models;
-use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation Project
@@ -71,6 +69,14 @@ class TranslationProject extends Model
     public $projectData;
 
     /**
+     * The translation service provider, currently only support OHT(OneHourTranslation) and GCT(GoogleCloudTranslation)
+     * @var $provider string
+     */
+    public $provider;
+    const PROVIDER_ONE_HOUR_TRANSLATION = "OHT";
+    const PROVIDER_GOOGLE_CLOUD_TRANSLATION = "GCT";
+
+    /**
      * Get Unique ID
      *
      * @return string
@@ -95,7 +101,10 @@ class TranslationProject extends Model
      */
     public function setId($id)
     {
-        $this->data["id"] = $id;
+        if ($this->data["id"] != $id) {
+            $this->data["id"] = $id;
+            $this->modifiedColumns["id"] = true;
+        }
         return $this;
     }
 
@@ -114,7 +123,10 @@ class TranslationProject extends Model
      */
     public function setTargetLanguage($targetLanguage)
     {
-        $this->data["targetLanguage"] = $targetLanguage;
+        if ($this->data["targetLanguage"] != $targetLanguage) {
+            $this->data["targetLanguage"] = $targetLanguage;
+            $this->modifiedColumns["targetLanguage"] = true;
+        }
         return $this;
     }
 
@@ -133,7 +145,10 @@ class TranslationProject extends Model
      */
     public function setCreated($created)
     {
-        $this->data["created"] = $created;
+        if ($this->data["created"] != $created) {
+            $this->data["created"] = $created;
+            $this->modifiedColumns["created"] = true;
+        }
         return $this;
     }
 
@@ -152,7 +167,10 @@ class TranslationProject extends Model
      */
     public function setModified($modified)
     {
-        $this->data["modified"] = $modified;
+        if ($this->data["modified"] != $modified) {
+            $this->data["modified"] = $modified;
+            $this->modifiedColumns["modified"] = true;
+        }
         return $this;
     }
 
@@ -171,7 +189,10 @@ class TranslationProject extends Model
      */
     public function setStatus($status)
     {
-        $this->data["status"] = $status;
+        if ($this->data["status"] != $status) {
+            $this->data["status"] = $status;
+            $this->modifiedColumns["status"] = true;
+        }
         return $this;
     }
 
@@ -190,7 +211,32 @@ class TranslationProject extends Model
      */
     public function setProjectData($projectData)
     {
-        $this->data["projectData"] = $projectData;
+        if ($this->data["projectData"] != $projectData) {
+            $this->data["projectData"] = $projectData;
+            $this->modifiedColumns["projectData"] = true;
+        }
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getProvider()
+    {
+        return $this->data["provider"];
+    }
+
+    /**
+     * @param string $provider
+     *
+     * @return TranslationProject
+     */
+    public function setProvider($provider)
+    {
+        if ($this->data["provider"] != $provider) {
+            $this->data["provider"] = $provider;
+            $this->modifiedColumns["provider"] = true;
+        }
         return $this;
     }
 }

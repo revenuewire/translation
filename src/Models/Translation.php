@@ -1,7 +1,6 @@
 <?php
 namespace Models;
 use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation
@@ -120,7 +119,10 @@ class Translation extends Model
      */
     public function setId($id)
     {
-        $this->data["id"] = $id;
+        if ($this->data["id"] != $id) {
+            $this->data["id"] = $id;
+            $this->modifiedColumns["id"] = true;
+        }
         return $this;
     }
 
@@ -139,7 +141,10 @@ class Translation extends Model
      */
     public function setText($t)
     {
-        $this->data["t"] = $t;
+        if ($this->data["t"] != $t) {
+            $this->data["t"] = $t;
+            $this->modifiedColumns["t"] = true;
+        }
         return $this;
     }
 
@@ -158,9 +163,11 @@ class Translation extends Model
      */
     public function setLang($l)
     {
-        $this->data["l"] = $l;
+        if ($this->data["l"] != $l) {
+            $this->data["l"] = $l;
+            $this->modifiedColumns["l"] = true;
+        }
         return $this;
     }
-
 
 }

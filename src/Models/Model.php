@@ -11,6 +11,8 @@ class Model
     protected $table;
     protected $data;
     protected $isNew;
+    protected $modifiedColumns;
+    protected $isModified;
 
     /**
      * TranslationQueue constructor.
@@ -85,6 +87,16 @@ class Model
     public function debug()
     {
         var_dump($this->data);
+    }
+
+    /**
+     * Return true if the object has been modified.
+     *
+     * @return bool
+     */
+    public function isModified()
+    {
+        return !empty($this->modifiedColumns);
     }
 
     /**

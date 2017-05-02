@@ -2,7 +2,6 @@
 namespace Models;
 
 use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
 
 class TranslationQueue extends Model
 {
@@ -41,18 +40,16 @@ class TranslationQueue extends Model
     public $targetId;
 
     /**
+     * The translated text
+     * @var $targetResult string
+     */
+    public $targetResult;
+
+    /**
      * The project ID once the text is being batched
      * @var $projectId string
      */
     public $projectId;
-
-    /**
-     * The translation service provider, currently only support OHT(OneHourTranslation) and GCT(GoogleCloudTranslation)
-     * @var $provider string
-     */
-    public $provider;
-    const PROVIDER_ONE_HOUR_TRANSLATION = "OHT";
-    const PROVIDER_GOOGLE_CLOUD_TRANSLATION = "GCT";
 
     /**
      * The status of the queue, either PENDING or COMPLETED
@@ -79,12 +76,13 @@ class TranslationQueue extends Model
      *
      * @param $sourceId
      * @param $targetLanguage
+     * @param $targetProvider
      *
      * @return string
      */
-    public static function idFactory($sourceId, $targetLanguage)
+    public static function idFactory($sourceId, $targetLanguage, $targetProvider)
     {
-        return $sourceId . '_' . $targetLanguage;
+        return $sourceId . '_' . $targetLanguage . '_' . $targetProvider;
     }
 
     /**
@@ -129,7 +127,10 @@ class TranslationQueue extends Model
      */
     public function setId($id)
     {
-        $this->data["id"] = $id;
+        if ($this->data["id"] != $id) {
+            $this->data["id"] = $id;
+            $this->modifiedColumns["id"] = true;
+        }
         return $this;
     }
 
@@ -148,7 +149,32 @@ class TranslationQueue extends Model
      */
     public function setTargetId($targetId)
     {
-        $this->data["targetId"] = $targetId;
+        if ($this->data["targetId"] != $targetId) {
+            $this->data["targetId"] = $targetId;
+            $this->modifiedColumns["targetId"] = true;
+        }
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTargetResult()
+    {
+        return $this->data["targetResult"];
+    }
+
+    /**
+     * @param string $targetResult
+     *
+     * @return TranslationQueue
+     */
+    public function setTargetResult($targetResult)
+    {
+        if ($this->data["targetResult"] != $targetResult) {
+            $this->data["targetResult"] = $targetResult;
+            $this->modifiedColumns["targetResult"] = true;
+        }
         return $this;
     }
 
@@ -167,26 +193,10 @@ class TranslationQueue extends Model
      */
     public function setProjectId($projectId)
     {
-        $this->data["projectId"] = $projectId;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getProvider()
-    {
-        return $this->data["provider"];
-    }
-
-    /**
-     * @param string $provider
-     *
-     * @return TranslationQueue
-     */
-    public function setProvider($provider)
-    {
-        $this->data["provider"] = $provider;
+        if ($this->data["projectId"] != $projectId) {
+            $this->data["projectId"] = $projectId;
+            $this->modifiedColumns["projectId"] = true;
+        }
         return $this;
     }
 
@@ -205,7 +215,10 @@ class TranslationQueue extends Model
      */
     public function setStatus($status)
     {
-        $this->data["status"] = $status;
+        if ($this->data["status"] != $status) {
+            $this->data["status"] = $status;
+            $this->modifiedColumns["status"] = true;
+        }
         return $this;
     }
 
@@ -224,7 +237,10 @@ class TranslationQueue extends Model
      */
     public function setCreated($created)
     {
-        $this->data["created"] = $created;
+        if ($this->data["created"] != $created) {
+            $this->data["created"] = $created;
+            $this->modifiedColumns["created"] = true;
+        }
         return $this;
     }
 
@@ -243,9 +259,11 @@ class TranslationQueue extends Model
      */
     public function setModified($modified)
     {
-        $this->data["modified"] = $modified;
+        if ($this->data["modified"] != $modified) {
+            $this->data["modified"] = $modified;
+            $this->modifiedColumns["modified"] = true;
+        }
         return $this;
     }
-
 
 }
