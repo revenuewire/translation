@@ -83,6 +83,15 @@ class Model
     }
 
     /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->data["id"];
+    }
+
+
+    /**
      * Get Property
      *
      * @param $property

@@ -1,5 +1,6 @@
 <?php
 namespace Models;
+use Aws\DynamoDb\DynamoDbClient;
 
 /**
  * Translation Project
@@ -21,6 +22,24 @@ class TranslationProject extends Model
                 'AttributeName' => 'id',
                 'KeyType' => 'HASH',
             ]
+        ],
+        'GlobalSecondaryIndexes' => [
+            [
+                'IndexName' => 'status-index',
+                'KeySchema' => [
+                    [
+                        'AttributeName' => 'status', // REQUIRED
+                        'KeyType' => 'HASH', // REQUIRED
+                    ],
+                ],
+                'Projection' => [
+                    'ProjectionType' => 'ALL',
+                ],
+                'ProvisionedThroughput' => [
+                    'ReadCapacityUnits' => 1,
+                    'WriteCapacityUnits' => 1,
+                ],
+            ],
         ],
         'ProvisionedThroughput' => [
             'ReadCapacityUnits' => 1,
@@ -87,11 +106,84 @@ class TranslationProject extends Model
     }
 
     /**
-     * @return string
+     * Get Projects by status
+     *
+     * @param $config
+     * @param $status mixed
+     *
+     * @return mixed
      */
-    public function getId()
+    public static function getProjectsByStatus($config, $status)
     {
-        return $this->data["id"];
+        if (is_scalar($status)) {
+            $status = array($status);
+        }
+
+        $dbClient = new DynamoDbClient([
+            "region" => $config['region'],
+            "version" => $config['version'],
+        ]);
+        $items = [];
+
+        foreach ($status as $s) {
+            $queryAttributes = array(
+                'TableName' => $config['name'],
+                'IndexName' => 'status-index',
+                'ExpressionAttributeNames' => array(
+                    '#status' => 'status'
+                ),
+                'ExpressionAttributeValues' => array(
+                    ':status' => array('S' => $s),
+                ),
+                'KeyConditionExpression' => '#status = :status'
+            );
+
+            $result = $dbClient->query($queryAttributes);
+            foreach ($result->get('Items') as $item) {
+                $itemData = TranslationProject::populateItemToObject($config, $item);
+                $items[] = $itemData;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get Projects By Ids
+     *
+     * @param $config
+     * @param $ids
+     *
+     * @return array
+     */
+    public static function getProjectsByIds($config, $ids)
+    {
+        $dbClient = new DynamoDbClient([
+            "region" => $config['region'],
+            "version" => $config['version'],
+        ]);
+
+        $batchKeys = [];
+        foreach ($ids as $id) {
+            $batchKeys[] = ['id' => ["S" => $id]];
+        }
+
+        $result = $dbClient->batchGetItem([
+            'RequestItems' => [
+                $config['name'] => [
+                    "Keys" => $batchKeys,
+                    'ConsistentRead' => false,
+                ]
+            ]
+        ]);
+
+        $items = [];
+        foreach ($result['Responses'][$config['name']] as $item) {
+            $itemData = TranslationProject::populateItemToObject($config, $item);
+            $items[] = $itemData;
+        }
+
+        return $items;
     }
 
     /**

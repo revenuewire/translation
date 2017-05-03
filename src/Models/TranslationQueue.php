@@ -120,7 +120,7 @@ class TranslationQueue extends Model
      *
      * @param string $projectId
      *
-     * @return \Aws\Result
+     * @return mixed
      */
     public static function getQueueItemsByProjectId($config, $projectId)
     {
@@ -141,7 +141,13 @@ class TranslationQueue extends Model
             'KeyConditionExpression' => '#projectId = :projectId'
         );
        
-        return $dbClient->query($queryAttributes);
+        $items = [];
+        $result = $dbClient->query($queryAttributes);
+        foreach ($result->get('Items') as $item) {
+            $items[] = TranslationQueue::populateItemToObject($config, $item);
+        }
+
+        return $items;
     }
 
     /**

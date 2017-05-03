@@ -280,4 +280,16 @@ class OneHourTranslation
         throw new \InvalidArgumentException("Unable to create project in OHT. Reason: " . var_export($result, true));
     }
 
+    /**
+     * Get Project Status
+     *
+     * @param $projectId
+     *
+     * @return \com\OHT\API\stdClass
+     */
+    function getProjectStatus($projectId)
+    {
+        return $this->oht->getProjectDetails($projectId);
+    }
+
 }
