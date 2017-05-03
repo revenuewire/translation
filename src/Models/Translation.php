@@ -85,7 +85,7 @@ class Translation extends Model
             "version" => $config['version'],
         ]);
 
-        $scanAttributes = array(
+        $queryAttributes = array(
             'TableName' => $config['name'],
             'IndexName' => 'l-index',
             'ExpressionAttributeNames' => array(
@@ -94,14 +94,13 @@ class Translation extends Model
             'ExpressionAttributeValues' => array(
                 ':l' => array('S' => $lang),
             ),
-            'FilterExpression' => '#l = :l',
-            'ScanIndexForward' => true
+            'KeyConditionExpression' => '#l = :l'
         );
         if ($lastEvaluatedKey != null) {
-            $scanAttributes['ExclusiveStartKey'] = $lastEvaluatedKey;
+            $queryAttributes['ExclusiveStartKey'] = $lastEvaluatedKey;
         }
 
-        return $dbClient->scan($scanAttributes);
+        return $dbClient->query($queryAttributes);
     }
 
     /**

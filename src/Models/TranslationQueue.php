@@ -21,6 +21,24 @@ class TranslationQueue extends Model
                 'KeyType' => 'HASH',
             ]
         ],
+        'GlobalSecondaryIndexes' => [
+            [
+                'IndexName' => 'project-index',
+                'KeySchema' => [
+                    [
+                        'AttributeName' => 'projectId', // REQUIRED
+                        'KeyType' => 'HASH', // REQUIRED
+                    ],
+                ],
+                'Projection' => [
+                    'ProjectionType' => 'ALL',
+                ],
+                'ProvisionedThroughput' => [
+                    'ReadCapacityUnits' => 1,
+                    'WriteCapacityUnits' => 1,
+                ],
+            ],
+        ],
         'ProvisionedThroughput' => [
             'ReadCapacityUnits' => 1,
             'WriteCapacityUnits' => 1,
@@ -83,6 +101,47 @@ class TranslationQueue extends Model
     public static function idFactory($sourceId, $targetLanguage, $targetProvider)
     {
         return $sourceId . '_' . $targetLanguage . '_' . $targetProvider;
+    }
+
+    /**
+     * ID Exploder
+     *
+     * @param $id
+     *
+     * @return array
+     */
+    public static function idExplode($id)
+    {
+        return explode('_', $id);
+    }
+
+    /**
+     * Get Queue Items By ProjectID
+     *
+     * @param string $projectId
+     *
+     * @return \Aws\Result
+     */
+    public static function getQueueItemsByProjectId($config, $projectId)
+    {
+        $dbClient = new DynamoDbClient([
+            "region" => $config['region'],
+            "version" => $config['version'],
+        ]);
+
+        $queryAttributes = array(
+            'TableName' => $config['name'],
+            'IndexName' => 'project-index',
+            'ExpressionAttributeNames' => array(
+                '#projectId' => 'projectId'
+            ),
+            'ExpressionAttributeValues' => array(
+                ':projectId' => array('S' => $projectId),
+            ),
+            'KeyConditionExpression' => '#projectId = :projectId'
+        );
+       
+        return $dbClient->query($queryAttributes);
     }
 
     /**

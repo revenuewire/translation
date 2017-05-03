@@ -1,5 +1,6 @@
 <?php
 namespace Models;
+use Aws\DynamoDb\DynamoDbClient;
 
 /**
  * Class Model
@@ -55,6 +56,33 @@ class Model
     }
 
     /**
+     * Get a translation queue item by ID
+     *
+     * @param $table
+     * @param $id
+     *
+     * @return Model
+     */
+    public static function getById($table, $id)
+    {
+        $dbClient = new DynamoDbClient([
+            "region" => $table['region'],
+            "version" => $table['version'],
+        ]);
+        $name =  $table['name'];
+
+        $result = $dbClient->getItem(array(
+            'TableName' => $name,
+            'Key' => array(
+                'id' => array('S' => $id)
+            ),
+            'ConsistentRead' => true,
+        ));
+
+        return self::populateItemToObject($table, $result->get('Item'));
+    }
+
+    /**
      * Get Property
      *
      * @param $property
@@ -102,18 +130,51 @@ class Model
     /**
      * Save
      *
-     * @return \Aws\Result
+     * @return $this
      */
     public function save()
     {
+
         if ($this->isNew) {
             $this->isNew = false;
-            return $this->dbClient->putItem(array(
+            $this->dbClient->putItem(array(
                 'TableName' => $this->table,
                 'Item' => $this->marshaler->marshalItem($this->data),
                 'ConditionExpression' => 'attribute_not_exists(id)',
                 'ReturnValues' => 'ALL_OLD'
             ));
+
+            return $this;
         }
+
+        $expressionAttributeNames = [];
+        $expressionAttributeValues = [];
+        $updateExpressionHolder = [];
+        foreach ($this->modifiedColumns as $field => $hasModified) {
+            if ($hasModified === true) {
+                $expressionAttributeNames['#' . $field] = $field;
+                $expressionAttributeValues[':'.$field] = $this->marshaler->marshalValue($this->data[$field]);
+                $updateExpressionHolder[] = "#$field = :$field";
+
+                $this->modifiedColumns[$field] = false;
+            }
+        }
+        $updateExpression = implode(', ', $updateExpressionHolder);
+
+        $updateAttributes = [
+            'TableName' => $this->table,
+            'Key' => array(
+                'id' => $this->marshaler->marshalValue($this->getId())
+            ),
+            'ExpressionAttributeNames' =>$expressionAttributeNames,
+            'ExpressionAttributeValues' =>  $expressionAttributeValues,
+            'ConditionExpression' => 'attribute_exists(id)',
+            'UpdateExpression' => "set $updateExpression",
+            'ReturnValues' => 'ALL_NEW'
+        ];
+
+        $this->dbClient->updateItem($updateAttributes);
+
+        return $this;
     }
 }
