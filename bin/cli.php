@@ -223,6 +223,7 @@ switch ($action) {
             $queueItem->setModified(time());
             $queueItem->save();
         }
+        echo count($queueItems) . " items pushed to translation table\n";
         break;
     default:
         echo "The action is not supported. [$action] \n";
