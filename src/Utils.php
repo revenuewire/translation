@@ -1,4 +1,5 @@
 <?php
+namespace RW;
 
 /**
  * Created by IntelliJ IDEA.

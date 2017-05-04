@@ -13,12 +13,6 @@ class Model
     protected $modifiedColumns;
     protected $isModified;
 
-    /** @var $client DynamoDbClient */
-    public static $client;
-
-    /** @var $table string */
-    public static $table;
-
     /** @var $marshaller Marshaler */
     public static $marshaller;
 
@@ -28,64 +22,6 @@ class Model
     function __construct()
     {
         $this->isNew = true;
-    }
-
-    /**
-     * Get DynamoDB client
-     * @param $table
-     *
-     * @return DynamoDbClient
-     */
-    public static function init($table)
-    {
-        self::$client = new DynamoDbClient([
-            "region" => $table['region'],
-            "version" => $table['version'],
-        ]);
-        self::$marshaller = new Marshaler();
-        self::$table = $table['name'];
-    }
-
-    /**
-     * Populate Item into object
-     *
-     * @param $item
-     *
-     * @return Model
-     */
-    public static function populateItemToObject($item)
-    {
-        if (empty($item)) {
-            return null;
-        }
-
-        $class = get_called_class();
-        $object = new $class(self::$table);
-        foreach (self::$marshaller->unmarshalItem($item) as $k => $v) {
-            $object->data[$k] = $v;
-        }
-        $object->isNew = false;
-        return $object;
-    }
-
-    /**
-     * Get a translation queue item by ID
-     *
-     * @param $id
-     *
-     * @return Model
-     */
-    public static function getById($id)
-    {
-        $result = self::$client->getItem(array(
-            'TableName' => self::$table,
-            'Key' => array(
-                'id' => array('S' => $id)
-            ),
-            'ConsistentRead' => true,
-        ));
-
-        return self::populateItemToObject($result->get('Item'));
     }
 
     /**
@@ -143,18 +79,77 @@ class Model
     }
 
     /**
+     * Get DynamoDB client
+     * @param $table
+     *
+     */
+    public static function init($table)
+    {
+        $class = get_called_class();
+        $class::$client = new DynamoDbClient([
+            "region" => $table['region'],
+            "version" => $table['version'],
+        ]);
+        self::$marshaller = new Marshaler();
+        $class::$table = $table['name'];
+    }
+
+    /**
+     * Populate Item into object
+     *
+     * @param $item
+     *
+     * @return Model
+     */
+    public static function populateItemToObject($item)
+    {
+        if (empty($item)) {
+            return null;
+        }
+
+        $class = get_called_class();
+        $object = new $class($class::$table);
+        foreach (self::$marshaller->unmarshalItem($item) as $k => $v) {
+            $object->data[$k] = $v;
+        }
+        $object->isNew = false;
+        return $object;
+    }
+
+    /**
+     * Get a translation queue item by ID
+     *
+     * @param $id
+     *
+     * @return Model
+     */
+    public static function getById($id)
+    {
+        $class = get_called_class();
+        $result = $class::$client->getItem(array(
+            'TableName' => $class::$table,
+            'Key' => array(
+                'id' => array('S' => $id)
+            ),
+            'ConsistentRead' => true,
+        ));
+
+        return self::populateItemToObject($result->get('Item'));
+    }
+
+    /**
      * Save
      *
      * @return $this
      */
     public function save()
     {
-
+        $class = get_called_class();
         if ($this->isNew) {
             $this->isNew = false;
-            $this->dbClient->putItem(array(
-                'TableName' => $this->table,
-                'Item' => $this->marshaler->marshalItem($this->data),
+            $class::$client->putItem(array(
+                'TableName' => $class::$table,
+                'Item' => self::$marshaller->marshalItem($this->data),
                 'ConditionExpression' => 'attribute_not_exists(id)',
                 'ReturnValues' => 'ALL_OLD'
             ));
@@ -168,7 +163,7 @@ class Model
         foreach ($this->modifiedColumns as $field => $hasModified) {
             if ($hasModified === true) {
                 $expressionAttributeNames['#' . $field] = $field;
-                $expressionAttributeValues[':'.$field] = $this->marshaler->marshalValue($this->data[$field]);
+                $expressionAttributeValues[':'.$field] = self::$marshaller->marshalValue($this->data[$field]);
                 $updateExpressionHolder[] = "#$field = :$field";
 
                 $this->modifiedColumns[$field] = false;
@@ -177,9 +172,9 @@ class Model
         $updateExpression = implode(', ', $updateExpressionHolder);
 
         $updateAttributes = [
-            'TableName' => $this->table,
+            'TableName' => $class::$table,
             'Key' => array(
-                'id' => $this->marshaler->marshalValue($this->getId())
+                'id' => self::$marshaller->marshalValue($this->getId())
             ),
             'ExpressionAttributeNames' =>$expressionAttributeNames,
             'ExpressionAttributeValues' =>  $expressionAttributeValues,
@@ -188,7 +183,7 @@ class Model
             'ReturnValues' => 'ALL_NEW'
         ];
 
-        $this->dbClient->updateItem($updateAttributes);
+        $class::$client->updateItem($updateAttributes);
 
         return $this;
     }

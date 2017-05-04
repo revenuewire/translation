@@ -1,6 +1,7 @@
 <?php
 namespace RW\Models;
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation Project
@@ -94,6 +95,12 @@ class TranslationProject extends Model
     public $provider;
     const PROVIDER_ONE_HOUR_TRANSLATION = "OHT";
     const PROVIDER_GOOGLE_CLOUD_TRANSLATION = "GCT";
+
+    /** @var $client DynamoDbClient */
+    public static $client;
+
+    /** @var $table string */
+    public static $table;
 
     /**
      * Get Unique ID

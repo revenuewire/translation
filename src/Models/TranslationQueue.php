@@ -2,6 +2,7 @@
 namespace RW\Models;
 
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
 class TranslationQueue extends Model
 {
@@ -113,28 +114,11 @@ class TranslationQueue extends Model
      */
     public $namespace;
 
-    /**
-     * @return mixed
-     */
-    public function getNamespace()
-    {
-        return $this->data["namespace"];
-    }
+    /** @var $client DynamoDbClient */
+    public static $client;
 
-    /**
-     * @param mixed $namespace
-     *
-     * @return TranslationQueue
-     */
-    public function setNamespace($namespace)
-    {
-        if ($this->data["namespace"] != $namespace) {
-            $this->data["namespace"] = $namespace;
-            $this->modifiedColumns["namespace"] = true;
-        }
-        return $this;
-    }
-
+    /** @var $table string */
+    public static $table;
 
     /**
      * ID Factory for Queue Item
@@ -203,7 +187,7 @@ class TranslationQueue extends Model
     {
         $queryAttributes = array(
             'TableName' => self::$table,
-            'IndexName' => 'project-index',
+            'IndexName' => 'status-index',
             'ExpressionAttributeNames' => array(
                 '#status' => 'status'
             ),
@@ -372,6 +356,28 @@ class TranslationQueue extends Model
         if ($this->data["modified"] != $modified) {
             $this->data["modified"] = $modified;
             $this->modifiedColumns["modified"] = true;
+        }
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getNamespace()
+    {
+        return $this->data["namespace"];
+    }
+
+    /**
+     * @param mixed $namespace
+     *
+     * @return TranslationQueue
+     */
+    public function setNamespace($namespace)
+    {
+        if ($this->data["namespace"] != $namespace) {
+            $this->data["namespace"] = $namespace;
+            $this->modifiedColumns["namespace"] = true;
         }
         return $this;
     }

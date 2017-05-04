@@ -40,21 +40,21 @@ $translationConfig = [
     "region" => $options['region'],
     "version" => "2012-08-10"
 ];
-\Models\Translation::init($translationConfig);
+RW\Models\Translation::init($translationConfig);
 
 $translationQueueConfig = [
     "name" => $options['translation_queue'],
     "region" => $options['region'],
     "version" => "2012-08-10"
 ];
-\Models\TranslationQueue::init($translationQueueConfig);
+RW\Models\TranslationQueue::init($translationQueueConfig);
 
 $translationProjectConfig = [
     "name" => $options['translation_project'],
     "region" => $options['region'],
     "version" => "2012-08-10"
 ];
-\Models\TranslationProject::init($translationProjectConfig);
+RW\Models\TranslationProject::init($translationProjectConfig);
 
 $oht = [
     "pubkey" => !empty($options['oth_pubkey']) ? $options['oth_pubkey'] : "",
@@ -92,28 +92,28 @@ switch ($action) {
     case "add":
         $projectIds = array_slice($argv, count($options) + 2);
         if (empty($projectIds)) {
-            $projects = \Models\TranslationProject::getProjectsByStatus(\Models\TranslationProject::STATUS_PENDING);
+            $projects = RW\Models\TranslationProject::getProjectsByStatus(RW\Models\TranslationProject::STATUS_PENDING);
         } else {
-            $projects = \Models\TranslationProject::getProjectsByIds($projectIds);
+            $projects = RW\Models\TranslationProject::getProjectsByIds($projectIds);
         }
 
         foreach ($projects as $project) {
             echo "Starting processing project: {$project->getId()} \n";
-            /** @var $translationProjectItem \Models\TranslationProject */
-            $translationProjectItem = \Models\TranslationProject::getById($project->getId());
-            if (empty($translationProjectItem) || $translationProjectItem->getStatus() != \Models\TranslationProject::STATUS_PENDING) {
+            /** @var $translationProjectItem RW\Models\TranslationProject */
+            $translationProjectItem = RW\Models\TranslationProject::getById($project->getId());
+            if (empty($translationProjectItem) || $translationProjectItem->getStatus() != RW\Models\TranslationProject::STATUS_PENDING) {
                 echo "The project does not exists or the status is not pending.\n";
                 continue;
             }
             switch ($translationProjectItem->getProvider()) {
-                case \Models\TranslationProject::PROVIDER_ONE_HOUR_TRANSLATION:
+                case RW\Models\TranslationProject::PROVIDER_ONE_HOUR_TRANSLATION:
                     if (empty($oht['pubkey']) || empty($oht['secret'])) {
                         throw new InvalidArgumentException("Unable to continue OTH project without keys.");
                     }
 
                     handleOHTProject($translationProjectItem, $oht);
                     break;
-                case \Models\TranslationProject::PROVIDER_GOOGLE_CLOUD_TRANSLATION:
+                case RW\Models\TranslationProject::PROVIDER_GOOGLE_CLOUD_TRANSLATION:
                     echo "TBD\n";
                     break;
                 default:
@@ -126,26 +126,26 @@ switch ($action) {
     case "status":
         $projectIds = array_slice($argv, count($options) + 2);
         if (empty($projectIds)) {
-            $projects = \Models\TranslationProject::getProjectsByStatus(array(\Models\TranslationProject::STATUS_PENDING,
-                                    \Models\TranslationProject::STATUS_IN_PROGRESS));
+            $projects = RW\Models\TranslationProject::getProjectsByStatus(array(RW\Models\TranslationProject::STATUS_PENDING,
+                RW\Models\TranslationProject::STATUS_IN_PROGRESS));
         } else {
-            $projects = \Models\TranslationProject::getProjectsByIds($projectIds);
+            $projects = RW\Models\TranslationProject::getProjectsByIds($projectIds);
         }
 
-        /** @var $project \Models\TranslationProject */
+        /** @var $project RW\Models\TranslationProject */
         foreach ($projects as $project) {
             $projectData = $project->getProjectData();
             $projectId = $project->getId();
             $status = $project->getStatus();
 
-            if ($status == \Models\TranslationProject::STATUS_PENDING) {
+            if ($status == RW\Models\TranslationProject::STATUS_PENDING) {
                 echo "Project: [{$projectId}] is [{$status}]\n";
             } else {
                 if (empty($oht['pubkey']) || empty($oht['secret'])) {
                     throw new InvalidArgumentException("Unable to continue OTH project without keys.");
                 }
 
-                $oneHourTranslation = new \Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
+                $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
                 $result = $oneHourTranslation->getProjectStatus($projectData['project_id']);
                 echo "Project: [{$projectId}]. OHT Status: [{$result->results->project_status}]\n";
             }
@@ -155,18 +155,18 @@ switch ($action) {
     case "commit":
         $projectIds = array_slice($argv, count($options) + 2);
         if (empty($projectIds)) {
-            $projects = \Models\TranslationProject::getProjectsByStatus(\Models\TranslationProject::STATUS_IN_PROGRESS);
+            $projects = RW\Models\TranslationProject::getProjectsByStatus(RW\Models\TranslationProject::STATUS_IN_PROGRESS);
         } else {
-            $projects = \Models\TranslationProject::getProjectsByIds($projectIds);
+            $projects = RW\Models\TranslationProject::getProjectsByIds($projectIds);
         }
 
-        /** @var $project \Models\TranslationProject */
+        /** @var $project RW\Models\TranslationProject */
         foreach ($projects as $project) {
             $projectData = $project->getProjectData();
             $projectId = $project->getId();
             $status = $project->getStatus();
 
-            if ($status == \Models\TranslationProject::STATUS_PENDING) {
+            if ($status == RW\Models\TranslationProject::STATUS_PENDING) {
                 echo "Unable to commit pending project. Project: [{$projectId}]\n";
                 continue;
             }
@@ -174,7 +174,7 @@ switch ($action) {
             if (empty($oht['pubkey']) || empty($oht['secret'])) {
                 throw new InvalidArgumentException("Unable to continue OTH project without keys.");
             }
-            $oneHourTranslation = new \Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
+            $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
             $result = $oneHourTranslation->getProjectStatus($projectData['project_id']);
             if (in_array($result->results->project_status_code, array('signed', 'completed'))) {
                 echo "Ready to commit translated results into project: [{$projectId}]\n";
@@ -190,17 +190,17 @@ switch ($action) {
                         $queueId = $item->getAttribute('id');
 
                         $text =  $item->textContent;
-                        $translationQueueItem = \Models\TranslationQueue::getById($queueId);
+                        $translationQueueItem = RW\Models\TranslationQueue::getById($queueId);
                         $translationQueueItem->setTargetResult($text);
                         $translationQueueItem->setModified(time());
-                        $translationQueueItem->setStatus(\Models\TranslationQueue::STATUS_READY);
+                        $translationQueueItem->setStatus(RW\Models\TranslationQueue::STATUS_READY);
                         $translationQueueItem->save();
 
                         echo "  ===> Queue ID [$queueId] processed.\n";
                     }
                 }
             }
-            $project->setStatus(\Models\TranslationProject::STATUS_COMPLETED);
+            $project->setStatus(RW\Models\TranslationProject::STATUS_COMPLETED);
             $project->setModified(time());
             $project->save();
 
@@ -208,18 +208,18 @@ switch ($action) {
         }
         break;
     case "push":
-        $queueItems = \Models\TranslationQueue::getQueueItemsByStatus(\Models\TranslationQueue::STATUS_READY);
-        /** @var $queueItem \Models\TranslationQueue*/
+        $queueItems = RW\Models\TranslationQueue::getQueueItemsByStatus(RW\Models\TranslationQueue::STATUS_READY);
+        /** @var $queueItem RW\Models\TranslationQueue*/
         foreach ($queueItems as $queueItem) {
-            list($sourceId, $targetLanguage, $__p) = \Models\TranslationQueue::idExplode($queueItem->getId());
-            $translationItem = new \Models\Translation();
-            $translationItem->setId(\Models\Translation::idFactory($queueItem->getNamespace(), $targetLanguage,$queueItem->getTargetResult()));
+            list($sourceId, $targetLanguage, $__p) = RW\Models\TranslationQueue::idExplode($queueItem->getId());
+            $translationItem = new RW\Models\Translation();
+            $translationItem->setId(RW\Models\Translation::idFactory($queueItem->getNamespace(), $targetLanguage,$queueItem->getTargetResult()));
             $translationItem->setLang($targetLanguage);
             $translationItem->setText($queueItem->getTargetResult());
             $translationItem->setNamespace($queueItem->getNamespace());
             $translationItem->save();
 
-            $queueItem->setStatus(\Models\TranslationQueue::STATUS_COMPLETED);
+            $queueItem->setStatus(RW\Models\TranslationQueue::STATUS_COMPLETED);
             $queueItem->setModified(time());
             $queueItem->save();
         }
@@ -245,27 +245,27 @@ function diff($targetLanguage, $targetProvider, $limit)
 
     echo "Source Language: [en]. Target Language: [$targetLanguage]. Target Provider: [$targetProvider]\n";
 
-    $translationItems = \Models\Translation::getAllTextsByLanguage(\Models\Translation::DEFAULT_LANGUAGE_CODE, $lastEvaluatedKey);
-    /** @var $translationItemObj \Models\Translation */
+    $translationItems = RW\Models\Translation::getAllTextsByLanguage(RW\Models\Translation::DEFAULT_LANGUAGE_CODE, $lastEvaluatedKey);
+    /** @var $translationItemObj RW\Models\Translation */
     foreach ($translationItems as $translationItemObj) {
         //starting a new project
         if ($projectId === null || $projectItemCount % $limit == 0) {
-            $projectId = \Models\TranslationProject::idFactory();
-            $translationProjectObject = new \Models\TranslationProject();
+            $projectId = RW\Models\TranslationProject::idFactory();
+            $translationProjectObject = new RW\Models\TranslationProject();
             $translationProjectObject->setId($projectId);
             $translationProjectObject->setCreated(time());
             $translationProjectObject->setModified(time());
-            $translationProjectObject->setStatus(\Models\TranslationProject::STATUS_PENDING);
+            $translationProjectObject->setStatus(RW\Models\TranslationProject::STATUS_PENDING);
             $translationProjectObject->setProvider($targetProvider);
             $translationProjectObject->setTargetLanguage($targetLanguage);
         }
 
-        $translationQueueItemID = \Models\TranslationQueue::idFactory($translationItemObj->getId(), $targetLanguage, $targetProvider);
-        $translationQueueItem = \Models\TranslationQueue::getById($translationQueueItemID);
+        $translationQueueItemID = RW\Models\TranslationQueue::idFactory($translationItemObj->getId(), $targetLanguage, $targetProvider);
+        $translationQueueItem = RW\Models\TranslationQueue::getById($translationQueueItemID);
         if (empty($translationQueueItem)) {
-            $translationQueueItem = new \Models\TranslationQueue();
+            $translationQueueItem = new RW\Models\TranslationQueue();
             $translationQueueItem->setId($translationQueueItemID);
-            $translationQueueItem->setStatus(\Models\TranslationQueue::STATUS_PENDING);
+            $translationQueueItem->setStatus(RW\Models\TranslationQueue::STATUS_PENDING);
             $translationQueueItem->setCreated(time());
             $translationQueueItem->setModified(time());
             $translationQueueItem->setProjectId($projectId);
@@ -288,15 +288,15 @@ function diff($targetLanguage, $targetProvider, $limit)
 
 /**
  * Handle OHT
- * @param $translationProjectItem \Models\TranslationProject
+ * @param $translationProjectItem RW\Models\TranslationProject
  */
 function handleOHTProject($translationProjectItem, $oht)
 {
-    $queuedItems = \Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
+    $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
 
     $projectId = $translationProjectItem->getId();
-    $targetLang = \Services\OneHourTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
-    $sourceLang = \Services\OneHourTranslation::transformTargetLang(\Models\Translation::DEFAULT_LANGUAGE_CODE);
+    $targetLang = RW\Services\OneHourTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
+    $sourceLang = RW\Services\OneHourTranslation::transformTargetLang(RW\Models\Translation::DEFAULT_LANGUAGE_CODE);
 
     echo "Starting OHT translation project id: [$projectId]. Source Lang: [$sourceLang]. Target Lang: [$targetLang] \n";
 
@@ -308,9 +308,9 @@ function handleOHTProject($translationProjectItem, $oht)
     $dom->appendChild($translations);
 
     foreach ($queuedItems as $queuedItem) {
-        list($sourceId, $__t, $__p) = \Models\TranslationQueue::idExplode($queuedItem->getId());
-        /** @var $translationItem \Models\Translation */
-        $translationItem = \Models\Translation::getById($sourceId);
+        list($sourceId, $__t, $__p) = RW\Models\TranslationQueue::idExplode($queuedItem->getId());
+        /** @var $translationItem RW\Models\Translation */
+        $translationItem = RW\Models\Translation::getById($sourceId);
         $text = $translationItem->getText();
 
         $cdata = $dom->createCDATASection($text);
@@ -324,7 +324,7 @@ function handleOHTProject($translationProjectItem, $oht)
     }
 
     file_put_contents("/tmp/{$projectId}.xml", $dom->saveXML());
-    $oneHourTranslation = new \Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
+    $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
     $resourceId = $oneHourTranslation->uploadResourceFile("/tmp/{$projectId}.xml");
 
     $ohtExpertise = null;
@@ -347,7 +347,7 @@ function handleOHTProject($translationProjectItem, $oht)
     $projectData = $oneHourTranslation->createProject($projectId, $sourceLang, $targetLang, $resourceId, $ohtExpertise, $ohtCallback, $ohtNote, $wordCount);
     $translationProjectItem->setProjectData($projectData);
     $translationProjectItem->setModified(time());
-    $translationProjectItem->setStatus(\Models\TranslationProject::STATUS_IN_PROGRESS);
+    $translationProjectItem->setStatus(RW\Models\TranslationProject::STATUS_IN_PROGRESS);
     $translationProjectItem->save();
 
     if (!empty($oht['tag'])) {

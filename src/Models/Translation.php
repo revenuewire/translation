@@ -1,6 +1,8 @@
 <?php
 namespace RW\Models;
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
+use RW\Utils;
 
 /**
  * Translation
@@ -77,28 +79,11 @@ class Translation extends Model
      */
     public $n;
 
-    /**
-     * @return string
-     */
-    public function getNamespace()
-    {
-        return $this->data["n"];
-    }
+    /** @var $client DynamoDbClient */
+    public static $client;
 
-    /**
-     * @param string $n
-     *
-     * @return Translation
-     */
-    public function setNamespace($n)
-    {
-        if ($this->data["n"] != $n) {
-            $this->data["n"] = $n;
-            $this->modifiedColumns["n"] = true;
-        }
-        return $this;
-    }
-
+    /** @var $table string */
+    public static $table;
     /**
      * ID factory
      *
@@ -111,7 +96,7 @@ class Translation extends Model
     public static function idFactory($namespace, $lang, $text)
     {
         $text = trim($text);
-        $id = \Utils::slugify(strlen($text) > self::MAX_KEY_LENGTH
+        $id = Utils::slugify(strlen($text) > self::MAX_KEY_LENGTH
             ? substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
             : $text);
 
@@ -221,6 +206,28 @@ class Translation extends Model
         if ($this->data["l"] != $l) {
             $this->data["l"] = $l;
             $this->modifiedColumns["l"] = true;
+        }
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getNamespace()
+    {
+        return $this->data["n"];
+    }
+
+    /**
+     * @param string $n
+     *
+     * @return Translation
+     */
+    public function setNamespace($n)
+    {
+        if ($this->data["n"] != $n) {
+            $this->data["n"] = $n;
+            $this->modifiedColumns["n"] = true;
         }
         return $this;
     }

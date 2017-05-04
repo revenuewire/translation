@@ -3,7 +3,7 @@
  * Class GoogleCloudTranslation
  */
 
-namespace Services;
+namespace RW\Services;
 
 
 class GoogleCloudTranslation
