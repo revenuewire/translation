@@ -73,34 +73,48 @@ class Translation extends Model
     /**
      * Get ALl Texts By Language
      *
+     * @param $config
      * @param string $lang
-     * @param null $lastEvaluatedKey
+     * @param null $limit
      *
-     * @return \Aws\Result
+     * @return array
      */
-    public static function getAllTextsByLanguage($config, $lang = self::DEFAULT_LANGUAGE_CODE, $lastEvaluatedKey = null)
+    public static function getAllTextsByLanguage($config, $lang = self::DEFAULT_LANGUAGE_CODE, $limit = null)
     {
+        $lastEvaluatedKey = null;
+        $items = [];
+
         $dbClient = new DynamoDbClient([
             "region" => $config['region'],
             "version" => $config['version'],
         ]);
 
-        $queryAttributes = array(
-            'TableName' => $config['name'],
-            'IndexName' => 'l-index',
-            'ExpressionAttributeNames' => array(
-                '#l' => 'l'
-            ),
-            'ExpressionAttributeValues' => array(
-                ':l' => array('S' => $lang),
-            ),
-            'KeyConditionExpression' => '#l = :l'
-        );
-        if ($lastEvaluatedKey != null) {
-            $queryAttributes['ExclusiveStartKey'] = $lastEvaluatedKey;
-        }
+        do {
+            $queryAttributes = array(
+                'TableName' => $config['name'],
+                'IndexName' => 'l-index',
+                'ExpressionAttributeNames' => array(
+                    '#l' => 'l'
+                ),
+                'ExpressionAttributeValues' => array(
+                    ':l' => array('S' => $lang),
+                ),
+                'KeyConditionExpression' => '#l = :l'
+            );
+            if ($lastEvaluatedKey != null) {
+                $queryAttributes['ExclusiveStartKey'] = $lastEvaluatedKey;
+            }
+            if ($limit > 0) {
+                $queryAttributes['Limit'] = $limit;
+            }
 
-        return $dbClient->query($queryAttributes);
+            $result = $dbClient->query($queryAttributes);
+            foreach ($result->get('Items') as $item) {
+                $items[] = Translation::populateItemToObject($config, $item);
+            }
+        } while ($lastEvaluatedKey !== null);
+
+        return $items;
     }
 
     /**

@@ -257,6 +257,92 @@ class OneHourTranslation
     }
 
     /**
+     * Upload File Resources
+     *
+     * @param $filePath
+     *
+     * @return mixed
+     */
+    function uploadResourceFile($filePath)
+    {
+        $curl = curl_init();
+
+        $data = [
+            "public_key" => $this->oht->getPublicKey(),
+            "secret_key" => $this->oht->getSecretKey(),
+            "upload" => "@" . $filePath,
+        ];
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->oht->getBaseURL() . "/resources/file",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => 1,
+            CURLOPT_SAFE_UPLOAD => false,
+            CURLOPT_POSTFIELDS => $data,
+            CURLOPT_HTTPHEADER => array(
+                "cache-control: no-cache",
+                "content-type: multipart/form-data;",
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        $result = json_decode($response);
+        if (!empty($result->status->msg) && $result->status->msg == 'ok') {
+            return $result->results[0];
+        }
+        throw new \InvalidArgumentException("Unable to upload resource to OHT. Reason: " . var_export($result, true));
+    }
+
+    /**
+     * Tag a project
+     *
+     * @param $projectId
+     */
+    function tagProject($projectId, $tag)
+    {
+        $curl = curl_init();
+
+        $data = [
+            "public_key" => $this->oht->getPublicKey(),
+            "secret_key" => $this->oht->getSecretKey(),
+            "tag_name" => $tag
+        ];
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->oht->getBaseURL() . "/project/$projectId/tag",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => 1,
+            CURLOPT_SAFE_UPLOAD => false,
+            CURLOPT_POSTFIELDS => $data,
+        ));
+
+        $response = curl_exec($curl);
+
+        $result = json_decode($response);
+        if (!empty($result->status->msg) && $result->status->msg == 'ok') {
+            return $result->results[0];
+        }
+        throw new \InvalidArgumentException("Unable to upload resource to OHT. Reason: " . var_export($result, true));
+    }
+
+    /**
+     * Unable to get resource
+     *
+     * @param $resourceId
+     *
+     * @return bool|string
+     */
+    function getResourceText($resourceId)
+    {
+        $result = $this->oht->getResource($resourceId, true);
+        if (!empty($result->status->msg) && $result->status->msg == 'ok') {
+            return base64_decode($result->results->content);
+        }
+        throw new \InvalidArgumentException("Unable to get resource from OHT. Reason: " . var_export($result, true));
+    }
+
+    /**
      * Create Project
      *
      * @param $targetLang
@@ -264,6 +350,10 @@ class OneHourTranslation
      */
     function createProject($name, $sourceLang, $targetLang, $sources, $expertise = null, $callbackURL = "", $note = "", $wordCount = 0)
     {
+        if (is_scalar($sources)) {
+            $sources = array($sources);
+        }
+
         $params = array();
         if (!empty($expertise)) {
             $params['expertise'] = $expertise;

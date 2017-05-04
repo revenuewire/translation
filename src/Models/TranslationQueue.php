@@ -38,6 +38,22 @@ class TranslationQueue extends Model
                     'WriteCapacityUnits' => 1,
                 ],
             ],
+            [
+                'IndexName' => 'status-index',
+                'KeySchema' => [
+                    [
+                        'AttributeName' => 'status', // REQUIRED
+                        'KeyType' => 'HASH', // REQUIRED
+                    ],
+                ],
+                'Projection' => [
+                    'ProjectionType' => 'ALL',
+                ],
+                'ProvisionedThroughput' => [
+                    'ReadCapacityUnits' => 1,
+                    'WriteCapacityUnits' => 1,
+                ],
+            ],
         ],
         'ProvisionedThroughput' => [
             'ReadCapacityUnits' => 1,
@@ -75,7 +91,9 @@ class TranslationQueue extends Model
      */
     public $status;
     const STATUS_PENDING = "PENDING";
+    const STATUS_READY = "READY";
     const STATUS_COMPLETED = "COMPLETED";
+    const STATUS_ERROR = "ERROR";
 
     /**
      * The date of the queue created in unix timestamp
