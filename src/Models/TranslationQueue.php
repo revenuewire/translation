@@ -1,5 +1,5 @@
 <?php
-namespace Models;
+namespace RW\Models;
 
 use Aws\DynamoDb\DynamoDbClient;
 

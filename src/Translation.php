@@ -93,7 +93,7 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \Models\Translation::idFactory($namespace, $lang, $text);
+            $id = \RW\Models\Translation::idFactory($namespace, $lang, $text);
             $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
             $slugTextIdMap[$id] = $textId;
             $slugTextIdMapReversed[$textId] = $id;
@@ -189,7 +189,7 @@ class Translation
             return $text;
         }
 
-        $id = \Models\Translation::idFactory($namespace, $lang, $text);
+        $id = \RW\Models\Translation::idFactory($namespace, $lang, $text);
 
         if ($this->hasCache($id)) {
             return $this->getCache($id);
