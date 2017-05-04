@@ -93,7 +93,6 @@ class TranslationQueue extends Model
     const STATUS_PENDING = "PENDING";
     const STATUS_READY = "READY";
     const STATUS_COMPLETED = "COMPLETED";
-    const STATUS_ERROR = "ERROR";
 
     /**
      * The date of the queue created in unix timestamp
@@ -106,6 +105,36 @@ class TranslationQueue extends Model
      * @var $modified integer
      */
     public $modified;
+
+    /**
+     * Namespace
+     *
+     * @var $namespace string
+     */
+    public $namespace;
+
+    /**
+     * @return mixed
+     */
+    public function getNamespace()
+    {
+        return $this->data["namespace"];
+    }
+
+    /**
+     * @param mixed $namespace
+     *
+     * @return TranslationQueue
+     */
+    public function setNamespace($namespace)
+    {
+        if ($this->data["namespace"] != $namespace) {
+            $this->data["namespace"] = $namespace;
+            $this->modifiedColumns["namespace"] = true;
+        }
+        return $this;
+    }
+
 
     /**
      * ID Factory for Queue Item
@@ -140,15 +169,10 @@ class TranslationQueue extends Model
      *
      * @return mixed
      */
-    public static function getQueueItemsByProjectId($config, $projectId)
+    public static function getQueueItemsByProjectId($projectId)
     {
-        $dbClient = new DynamoDbClient([
-            "region" => $config['region'],
-            "version" => $config['version'],
-        ]);
-
         $queryAttributes = array(
-            'TableName' => $config['name'],
+            'TableName' => self::$table,
             'IndexName' => 'project-index',
             'ExpressionAttributeNames' => array(
                 '#projectId' => 'projectId'
@@ -160,39 +184,42 @@ class TranslationQueue extends Model
         );
        
         $items = [];
-        $result = $dbClient->query($queryAttributes);
+        $result = self::$client->query($queryAttributes);
         foreach ($result->get('Items') as $item) {
-            $items[] = TranslationQueue::populateItemToObject($config, $item);
+            $items[] = TranslationQueue::populateItemToObject($item);
         }
 
         return $items;
     }
 
     /**
-     * Get a translation queue item by ID
+     * Get QueueItems By Status
      *
-     * @param $table
-     * @param $id
+     * @param $status
      *
-     * @return TranslationQueue
+     * @return array
      */
-    public static function getById($table, $id)
+    public static function getQueueItemsByStatus($status)
     {
-        $dbClient = new DynamoDbClient([
-            "region" => $table['region'],
-            "version" => $table['version'],
-        ]);
-        $name =  $table['name'];
-
-        $result = $dbClient->getItem(array(
-            'TableName' => $name,
-            'Key' => array(
-                'id' => array('S' => $id)
+        $queryAttributes = array(
+            'TableName' => self::$table,
+            'IndexName' => 'project-index',
+            'ExpressionAttributeNames' => array(
+                '#status' => 'status'
             ),
-            'ConsistentRead' => true,
-        ));
+            'ExpressionAttributeValues' => array(
+                ':status' => array('S' => $status),
+            ),
+            'KeyConditionExpression' => '#status = :status'
+        );
 
-        return self::populateItemToObject($table, $result->get('Item'));
+        $items = [];
+        $result = self::$client->query($queryAttributes);
+        foreach ($result->get('Items') as $item) {
+            $items[] = TranslationQueue::populateItemToObject($item);
+        }
+
+        return $items;
     }
 
     /**

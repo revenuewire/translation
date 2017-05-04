@@ -108,26 +108,21 @@ class TranslationProject extends Model
     /**
      * Get Projects by status
      *
-     * @param $config
      * @param $status mixed
      *
      * @return mixed
      */
-    public static function getProjectsByStatus($config, $status)
+    public static function getProjectsByStatus($status)
     {
         if (is_scalar($status)) {
             $status = array($status);
         }
 
-        $dbClient = new DynamoDbClient([
-            "region" => $config['region'],
-            "version" => $config['version'],
-        ]);
         $items = [];
 
         foreach ($status as $s) {
             $queryAttributes = array(
-                'TableName' => $config['name'],
+                'TableName' => self::$table,
                 'IndexName' => 'status-index',
                 'ExpressionAttributeNames' => array(
                     '#status' => 'status'
@@ -138,9 +133,9 @@ class TranslationProject extends Model
                 'KeyConditionExpression' => '#status = :status'
             );
 
-            $result = $dbClient->query($queryAttributes);
+            $result = self::$client->query($queryAttributes);
             foreach ($result->get('Items') as $item) {
-                $itemData = TranslationProject::populateItemToObject($config, $item);
+                $itemData = TranslationProject::populateItemToObject($item);
                 $items[] = $itemData;
             }
         }
@@ -151,26 +146,20 @@ class TranslationProject extends Model
     /**
      * Get Projects By Ids
      *
-     * @param $config
      * @param $ids
      *
      * @return array
      */
-    public static function getProjectsByIds($config, $ids)
+    public static function getProjectsByIds($ids)
     {
-        $dbClient = new DynamoDbClient([
-            "region" => $config['region'],
-            "version" => $config['version'],
-        ]);
-
         $batchKeys = [];
         foreach ($ids as $id) {
             $batchKeys[] = ['id' => ["S" => $id]];
         }
 
-        $result = $dbClient->batchGetItem([
+        $result = self::$client->batchGetItem([
             'RequestItems' => [
-                $config['name'] => [
+                self::$table => [
                     "Keys" => $batchKeys,
                     'ConsistentRead' => false,
                 ]
@@ -178,8 +167,8 @@ class TranslationProject extends Model
         ]);
 
         $items = [];
-        foreach ($result['Responses'][$config['name']] as $item) {
-            $itemData = TranslationProject::populateItemToObject($config, $item);
+        foreach ($result['Responses'][self::$table] as $item) {
+            $itemData = TranslationProject::populateItemToObject($item);
             $items[] = $itemData;
         }
 

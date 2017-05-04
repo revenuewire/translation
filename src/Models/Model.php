@@ -1,54 +1,67 @@
 <?php
 namespace Models;
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
 /**
  * Class Model
  */
 class Model
 {
-    protected $dbClient;
-    protected $marshaler;
-    protected $table;
     protected $data;
     protected $isNew;
     protected $modifiedColumns;
     protected $isModified;
 
+    /** @var $client DynamoDbClient */
+    public static $client;
+
+    /** @var $table string */
+    public static $table;
+
+    /** @var $marshaller Marshaler */
+    public static $marshaller;
+
     /**
      * TranslationQueue constructor.
-     *
-     * @param $table
      */
-    function __construct($table)
+    function __construct()
     {
-        $this->dbClient = new \Aws\DynamoDb\DynamoDbClient([
+        $this->isNew = true;
+    }
+
+    /**
+     * Get DynamoDB client
+     * @param $table
+     *
+     * @return DynamoDbClient
+     */
+    public static function init($table)
+    {
+        self::$client = new DynamoDbClient([
             "region" => $table['region'],
             "version" => $table['version'],
         ]);
-        $this->table =  $table['name'];
-        $this->marshaler = new \Aws\DynamoDb\Marshaler();
-        $this->isNew = true;
+        self::$marshaller = new Marshaler();
+        self::$table = $table['name'];
     }
 
     /**
      * Populate Item into object
      *
-     * @param $table
      * @param $item
      *
      * @return Model
      */
-    public static function populateItemToObject($table, $item)
+    public static function populateItemToObject($item)
     {
         if (empty($item)) {
             return null;
         }
 
-        $marshaller = new \Aws\DynamoDb\Marshaler();
         $class = get_called_class();
-        $object = new $class($table);
-        foreach ($marshaller->unmarshalItem($item) as $k => $v) {
+        $object = new $class(self::$table);
+        foreach (self::$marshaller->unmarshalItem($item) as $k => $v) {
             $object->data[$k] = $v;
         }
         $object->isNew = false;
@@ -58,28 +71,21 @@ class Model
     /**
      * Get a translation queue item by ID
      *
-     * @param $table
      * @param $id
      *
      * @return Model
      */
-    public static function getById($table, $id)
+    public static function getById($id)
     {
-        $dbClient = new DynamoDbClient([
-            "region" => $table['region'],
-            "version" => $table['version'],
-        ]);
-        $name =  $table['name'];
-
-        $result = $dbClient->getItem(array(
-            'TableName' => $name,
+        $result = self::$client->getItem(array(
+            'TableName' => self::$table,
             'Key' => array(
                 'id' => array('S' => $id)
             ),
             'ConsistentRead' => true,
         ));
 
-        return self::populateItemToObject($table, $result->get('Item'));
+        return self::populateItemToObject($result->get('Item'));
     }
 
     /**

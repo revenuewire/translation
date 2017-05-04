@@ -86,7 +86,7 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = $this->getHash($namespace, $lang, $text);
+            $id = \Models\Translation::idFactory($namespace, $lang, $text);
             $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
             $slugTextIdMap[$id] = $textId;
             $slugTextIdMapReversed[$textId] = $id;
@@ -134,6 +134,7 @@ class Translation
                         'id' => $slugTextIdMapReversed[$k],
                         't' => $v,
                         'l' => $lang,
+                        'n' => $namespace,
                     ])
                 ]];
             }
@@ -178,7 +179,7 @@ class Translation
             return $text;
         }
 
-        $id = $this->getHash($namespace, $lang, $text);
+        $id = \Models\Translation::idFactory($namespace, $lang, $text);
 
         if ($this->hasCache($id)) {
             return $this->getCache($id);
@@ -204,6 +205,7 @@ class Translation
                     'id' => $id,
                     't' => $text,
                     'l' => $lang,
+                    'n' => $namespace,
                 ];
                 $this->db->putItem(array(
                     'TableName' => $this->table,
@@ -224,27 +226,6 @@ class Translation
         $this->setCache($id, $data['t']);
 
         return $data['t'];
-    }
-
-    /**
-     * Get Hash
-     *
-     * @param $namespace
-     * @param $lang
-     * @param $text
-     *
-     * @return string
-     * @internal param $id
-     *
-     */
-    public function getHash($namespace, $lang, $text)
-    {
-        $text = trim($text);
-        $id = \Utils::slugify(strlen($text) > $this->maxIdLength
-                ? substr($text, 0, $this->maxIdLength) . hash('crc32', substr($text, $this->maxIdLength+1))
-                : $text);
-
-        return hash('ripemd160', implode('|:|', array($namespace, $lang, $id)));
     }
 
     /**

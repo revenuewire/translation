@@ -8,6 +8,7 @@ use Aws\DynamoDb\DynamoDbClient;
 class Translation extends Model
 {
     const DEFAULT_LANGUAGE_CODE = "en";
+    const MAX_KEY_LENGTH = 50;
 
     /**
      * DynamoDB Schema Definition
@@ -71,27 +72,68 @@ class Translation extends Model
     public $l;
 
     /**
+     * Namespace
+     * @var $n string
+     */
+    public $n;
+
+    /**
+     * @return string
+     */
+    public function getNamespace()
+    {
+        return $this->data["n"];
+    }
+
+    /**
+     * @param string $n
+     *
+     * @return Translation
+     */
+    public function setNamespace($n)
+    {
+        if ($this->data["n"] != $n) {
+            $this->data["n"] = $n;
+            $this->modifiedColumns["n"] = true;
+        }
+        return $this;
+    }
+
+    /**
+     * ID factory
+     *
+     * @param $namespace
+     * @param $lang
+     * @param $text
+     *
+     * @return string
+     */
+    public static function idFactory($namespace, $lang, $text)
+    {
+        $text = trim($text);
+        $id = \Utils::slugify(strlen($text) > self::MAX_KEY_LENGTH
+            ? substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
+            : $text);
+
+        return hash('ripemd160', implode('|:|', array($namespace, $lang, $id)));
+    }
+
+    /**
      * Get ALl Texts By Language
      *
-     * @param $config
      * @param string $lang
      * @param null $limit
      *
      * @return array
      */
-    public static function getAllTextsByLanguage($config, $lang = self::DEFAULT_LANGUAGE_CODE, $limit = null)
+    public static function getAllTextsByLanguage($lang = self::DEFAULT_LANGUAGE_CODE, $limit = null)
     {
         $lastEvaluatedKey = null;
         $items = [];
 
-        $dbClient = new DynamoDbClient([
-            "region" => $config['region'],
-            "version" => $config['version'],
-        ]);
-
         do {
             $queryAttributes = array(
-                'TableName' => $config['name'],
+                'TableName' => self::$table,
                 'IndexName' => 'l-index',
                 'ExpressionAttributeNames' => array(
                     '#l' => 'l'
@@ -108,9 +150,9 @@ class Translation extends Model
                 $queryAttributes['Limit'] = $limit;
             }
 
-            $result = $dbClient->query($queryAttributes);
+            $result = self::$client->query($queryAttributes);
             foreach ($result->get('Items') as $item) {
-                $items[] = Translation::populateItemToObject($config, $item);
+                $items[] = Translation::populateItemToObject($item);
             }
         } while ($lastEvaluatedKey !== null);
 
