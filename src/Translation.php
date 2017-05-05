@@ -4,11 +4,10 @@ namespace RW;
 use Aws\DynamoDb\DynamoDbClient;
 use Aws\DynamoDb\Marshaler;
 use Predis\Client;
+use RW\Services\GoogleCloudTranslation;
 
 class Translation
 {
-    const DefaultLanguage = 'en';
-
     /**
      * The max length you want to put for key. Note: If the key length is very small, you might run into collision.
      * If it is too big, you wasted space.
@@ -16,43 +15,60 @@ class Translation
     const keyLength = 50;
 
     public $dynamoSettings = array();
-    protected $db;
+    protected $db = null;
     protected $marshaler;
     public $supportLanguages;
 
     /** @var $cache Client  */
     public $cache = null;
     public $cachePrefix = null;
+    public $defaultLang = \RW\Models\Translation::DEFAULT_LANGUAGE_CODE;
+
+    public $live = false;
 
     /**
      * Translation constructor.
      *
-     * @param $dynamoSettings must consistent with region, version and table name.
+     * @param $dynamoSettings
      * @param array $supportLanguages
-     * @param null $cache cache is recommended for performance. Only support Redis for now
+     * @param null $cache
+     * @param null $defaultLang
+     * @param null $gct
      */
-    function __construct($dynamoSettings, $supportLanguages = array('en'), $cache = null)
+    function __construct($dynamoSettings = null, $supportLanguages = array('en'), $cache = null, $defaultLang = null, $gct = null)
     {
-        if (empty($dynamoSettings)
-                || empty($dynamoSettings['table'])
-                || empty($dynamoSettings['region'])
-                || empty($dynamoSettings['version'])) {
-            throw new \InvalidArgumentException("DyanmoDB is required.");
+        if (!empty($defaultLang)) {
+            $this->defaultLang = $defaultLang;
         }
-
-        /** @var $db DynamoDbClient */
-        $this->db = new DynamoDbClient(array(
-            "region" => $dynamoSettings['region'],
-            'version' => $dynamoSettings['version'],
-        ));
-        $this->table = $dynamoSettings['table'];
-
-        /** @var marshaler Marshaler */
-        $this->marshaler = new Marshaler();
-
         $this->supportLanguages = $supportLanguages;
 
-        if ($cache !== null) {
+        /**
+         * Using Live Google Cloud Translation
+         */
+        if (!empty($gct) && !empty($gct['project']) && !empty($gct['key'])) {
+            GoogleCloudTranslation::init($gct['project'], $gct['key']);
+            $this->live = true;
+        }
+
+        /**
+         * Using DynamoDB as storage of the translation
+         */
+        if (!empty($dynamoSettings) && !empty($dynamoSettings['region'])
+                && !empty($dynamoSettings['version']) && !empty($dynamoSettings['table'])) {
+            /** @var $db DynamoDbClient */
+            $this->db = new DynamoDbClient(array(
+                "region" => $dynamoSettings['region'],
+                'version' => $dynamoSettings['version'],
+            ));
+            $this->table = $dynamoSettings['table'];
+            /** @var marshaler Marshaler */
+            $this->marshaler = new Marshaler();
+        }
+
+        /**
+         * Using Cache as storage of the translation
+         */
+        if (!empty($cache) && !empty($cache['host']) && !empty($cache['timeout']) && !empty($cache['port'])) {
             $options = ['cluster' => 'redis'];
             $this->cache = new Client(array(
                 'scheme'   => 'tcp',
@@ -64,6 +80,14 @@ class Translation
                 $this->cachePrefix = $cache['prefix'];
             }
         }
+
+        if ($this->live == false && $this->db === null) {
+            throw new \InvalidArgumentException("Unable to start translation without db support.");
+        }
+
+        if ($this->live == true && $this->cache === null) {
+            throw new \InvalidArgumentException("Unable to start live translation without cache support.");
+        }
     }
 
     /**
@@ -74,8 +98,12 @@ class Translation
      *
      * @return array
      */
-    public function batchTranslate($messages = array(), $lang = "en")
+    public function batchTranslate($messages = array(), $lang = null)
     {
+        if (empty($lang)) {
+            $lang = $this->defaultLang;
+        }
+
         if (!in_array($lang, $this->supportLanguages)) {
             return $messages;
         }
@@ -132,7 +160,7 @@ class Translation
 
         $missingMessages = array_diff($messages, $resultMessages);
         $resultMessages = array_merge($messages, $resultMessages);
-        if ($lang == self::DefaultLanguage) {
+        if ($lang == $this->defaultLang) {
             $batchData = [];
             foreach ($missingMessages as $k => $v) {
                 $batchData[] = ['PutRequest' => [
@@ -169,13 +197,10 @@ class Translation
      *
      * @return string
      */
-    public function translate($text, $lang = self::DefaultLanguage)
+    public function translate($text, $lang = null)
     {
-        /**
-         * If language is not in supported languages, just return original text back
-         */
-        if (!in_array($lang, $this->supportLanguages)) {
-            return $text;
+        if (empty($lang)) {
+            $lang = $this->defaultLang;
         }
 
         /**
@@ -186,10 +211,34 @@ class Translation
             return $text;
         }
 
-        $id = \RW\Models\Translation::idFactory($lang, $text);
+        /**
+         * If language is not in supported languages, just return original text back
+         */
+        if (!in_array($lang, $this->supportLanguages)) {
+            return $text;
+        }
 
+        /**
+         * Always check cache first
+         */
+        $id = \RW\Models\Translation::idFactory($lang, $text);
         if ($this->hasCache($id)) {
             return $this->getCache($id);
+        }
+
+        /**
+         * If it is live mode, translated and put it into cache
+         */
+        if ($this->live === true) {
+            if ($lang == $this->defaultLang) {
+                return $text;
+            }
+            $sourceLang = GoogleCloudTranslation::transformTargetLang($this->defaultLang);
+            $targetLang = GoogleCloudTranslation::transformTargetLang($lang);
+            $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
+            $this->setCache($id, $translatedText);
+
+            return $translatedText;
         }
 
         /**
@@ -207,7 +256,7 @@ class Translation
             /**
              * If it is the default language and we missed the cache, this means it is the first time we had this text
              */
-            if ($lang == self::DefaultLanguage) {
+            if ($lang == $this->defaultLang) {
                 $data = [
                     'id' => $id,
                     't' => $text,
@@ -232,6 +281,7 @@ class Translation
         $this->setCache($id, $data['t']);
 
         return $data['t'];
+
     }
 
     /**
