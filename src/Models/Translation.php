@@ -77,12 +77,6 @@ class Translation extends Model
      */
     public $l;
 
-    /**
-     * Namespace
-     * @var $n string
-     */
-    public $n;
-
     /** @var $client DynamoDbClient */
     public static $client;
 
@@ -91,20 +85,19 @@ class Translation extends Model
     /**
      * ID factory
      *
-     * @param $namespace
      * @param $lang
      * @param $text
      *
      * @return string
      */
-    public static function idFactory($namespace, $lang, $text)
+    public static function idFactory($lang, $text)
     {
         $text = trim($text);
         $id = Utils::slugify(strlen($text) > self::MAX_KEY_LENGTH
             ? substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
             : $text);
 
-        return hash('ripemd160', implode('|:|', array($namespace, $lang, $id)));
+        return hash('ripemd160', implode('|:|', array($lang, $id)));
     }
 
     /**
@@ -213,27 +206,4 @@ class Translation extends Model
         }
         return $this;
     }
-
-    /**
-     * @return string
-     */
-    public function getNamespace()
-    {
-        return $this->data["n"];
-    }
-
-    /**
-     * @param string $n
-     *
-     * @return Translation
-     */
-    public function setNamespace($n)
-    {
-        if ($this->data["n"] != $n) {
-            $this->data["n"] = $n;
-            $this->modifiedColumns["n"] = true;
-        }
-        return $this;
-    }
-
 }

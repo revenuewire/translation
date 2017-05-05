@@ -71,11 +71,10 @@ class Translation
      *
      * @param array $messages
      * @param string $lang
-     * @param string $namespace
      *
      * @return array
      */
-    public function batchTranslate($messages = array(), $lang = "en", $namespace = "t_")
+    public function batchTranslate($messages = array(), $lang = "en")
     {
         if (!in_array($lang, $this->supportLanguages)) {
             return $messages;
@@ -93,7 +92,7 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \RW\Models\Translation::idFactory($namespace, $lang, $text);
+            $id = \RW\Models\Translation::idFactory($lang, $text);
             $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
             $slugTextIdMap[$id] = $textId;
             $slugTextIdMapReversed[$textId] = $id;
@@ -141,7 +140,6 @@ class Translation
                         'id' => $slugTextIdMapReversed[$k],
                         't' => $v,
                         'l' => $lang,
-                        'n' => $namespace,
                     ])
                 ]];
             }
@@ -168,11 +166,10 @@ class Translation
      *
      * @param $text
      * @param string $lang
-     * @param string $namespace
      *
      * @return string
      */
-    public function translate($text, $lang = self::DefaultLanguage, $namespace = "t_")
+    public function translate($text, $lang = self::DefaultLanguage)
     {
         /**
          * If language is not in supported languages, just return original text back
@@ -189,7 +186,7 @@ class Translation
             return $text;
         }
 
-        $id = \RW\Models\Translation::idFactory($namespace, $lang, $text);
+        $id = \RW\Models\Translation::idFactory($lang, $text);
 
         if ($this->hasCache($id)) {
             return $this->getCache($id);
@@ -214,8 +211,7 @@ class Translation
                 $data = [
                     'id' => $id,
                     't' => $text,
-                    'l' => $lang,
-                    'n' => $namespace,
+                    'l' => $lang
                 ];
                 $this->db->putItem(array(
                     'TableName' => $this->table,

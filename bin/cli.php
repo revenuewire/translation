@@ -7,10 +7,13 @@ date_default_timezone_set( 'UTC' );
 
 $options = getopt('', [
     'region::', 'translation::', 'translation_queue::', 'translation_project::',
-    'provider::', 'limit::',
+    'provider::', 'limit::', 'default_language::',
     'oth_pubkey::', 'oth_secret::', 'oth_sandbox::', 'oth_note::',
-    'oth_tag::', 'oth_expertise::', 'oth_callback::'
+    'oth_tag::', 'oth_expertise::', 'oth_callback::',
+    'gct_key::', 'gct_project::',
 ]);
+
+$defaultLanguage = empty($options['default_language']) ? "en" : $options['default_language'];
 
 /**
  * Check configuration
@@ -65,6 +68,11 @@ $oht = [
     "tag" => !empty($options['oth_tag']) ? $options['oth_tag'] : "",
 ];
 
+$gct = [
+  "key" => !empty($options['gct_key']) ? $options['gct_key'] : "",
+  "project" => !empty($options['gct_project']) ? $options['gct_project'] : "",
+];
+
 $numOfOptions = count($options);
 $action = $argv[$numOfOptions+1];
 
@@ -104,7 +112,7 @@ switch ($action) {
             exit;
         }
         foreach ($targetLanguages as $targetLanguage) {
-            diff($targetLanguage, $targetProvider, $limit);
+            diff($defaultLanguage, $targetLanguage, $targetProvider, $limit);
         }
         break;
 
@@ -126,14 +134,10 @@ switch ($action) {
             }
             switch ($translationProjectItem->getProvider()) {
                 case RW\Models\TranslationProject::PROVIDER_ONE_HOUR_TRANSLATION:
-                    if (empty($oht['pubkey']) || empty($oht['secret'])) {
-                        throw new InvalidArgumentException("Unable to continue OTH project without keys.");
-                    }
-
-                    handleOHTProject($translationProjectItem, $oht);
+                    handleOHTProject($defaultLanguage, $translationProjectItem, $oht);
                     break;
                 case RW\Models\TranslationProject::PROVIDER_GOOGLE_CLOUD_TRANSLATION:
-                    echo "TBD\n";
+                    handleGCTProject($defaultLanguage, $translationProjectItem, $gct);
                     break;
                 default:
                     echo "Unknown service provider\n";
@@ -181,12 +185,17 @@ switch ($action) {
 
         /** @var $project RW\Models\TranslationProject */
         foreach ($projects as $project) {
+            if ($project->getProvider() === \RW\Models\TranslationProject::PROVIDER_GOOGLE_CLOUD_TRANSLATION) {
+                echo "GCT project does not require commit as translation result is instantaneously.";
+                continue;
+            }
+
             $projectData = $project->getProjectData();
             $projectId = $project->getId();
             $status = $project->getStatus();
 
-            if ($status == RW\Models\TranslationProject::STATUS_PENDING) {
-                echo "Unable to commit pending project. Project: [{$projectId}]\n";
+            if ($status == RW\Models\TranslationProject::STATUS_PENDING || $status == \RW\Models\TranslationProject::STATUS_COMPLETED) {
+                echo "Unable to commit pending or completed project. Project: [{$projectId}]\n";
                 continue;
             }
 
@@ -232,18 +241,17 @@ switch ($action) {
         /** @var $queueItem RW\Models\TranslationQueue*/
         foreach ($queueItems as $queueItem) {
             list($sourceId, $targetLanguage, $__p) = RW\Models\TranslationQueue::idExplode($queueItem->getId());
-            $targetItemId = RW\Models\Translation::idFactory($queueItem->getNamespace(), $targetLanguage,$queueItem->getTargetResult());
-            $translationItem = \RW\Models\Translation::getById($targetItemId);
+            $targetItemId = $queueItem->getTargetId();
+            $targetTranslationItem = \RW\Models\Translation::getById($targetItemId);
 
-            if ($translationItem == null) {
-                $translationItem = new RW\Models\Translation();
-                $translationItem->setId($targetItemId);
-                $translationItem->setLang($targetLanguage);
-                $translationItem->setNamespace($queueItem->getNamespace());
+            if ($targetTranslationItem == null) {
+                $targetTranslationItem = new RW\Models\Translation();
+                $targetTranslationItem->setId($targetItemId);
+                $targetTranslationItem->setLang($targetLanguage);
             }
-            $translationItem->setText($queueItem->getTargetResult());
-            $translationItem->save();
-            echo "Target ID: [$targetItemId] pushed\n";
+            $targetTranslationItem->setText($queueItem->getTargetResult());
+            $targetTranslationItem->save();
+            echo "Target ID: [$targetItemId] pushed. Language: {$targetTranslationItem->getLang()}.\n";
 
             $queueItem->setStatus(RW\Models\TranslationQueue::STATUS_COMPLETED);
             $queueItem->setModified(time());
@@ -263,7 +271,7 @@ switch ($action) {
  * @param $targetProvider
  * @param $limit
  */
-function diff($targetLanguage, $targetProvider, $limit)
+function diff($defaultLanguage, $targetLanguage, $targetProvider, $limit)
 {
     $lastEvaluatedKey = null;
     $projectItemCount = 0;
@@ -272,7 +280,7 @@ function diff($targetLanguage, $targetProvider, $limit)
 
     echo "Source Language: [en]. Target Language: [$targetLanguage]. Target Provider: [$targetProvider]\n";
 
-    $translationItems = RW\Models\Translation::getAllTextsByLanguage(RW\Models\Translation::DEFAULT_LANGUAGE_CODE, $lastEvaluatedKey);
+    $translationItems = RW\Models\Translation::getAllTextsByLanguage($defaultLanguage, $lastEvaluatedKey);
     /** @var $translationItemObj RW\Models\Translation */
     foreach ($translationItems as $translationItemObj) {
         //starting a new project
@@ -296,7 +304,7 @@ function diff($targetLanguage, $targetProvider, $limit)
             $translationQueueItem->setCreated(time());
             $translationQueueItem->setModified(time());
             $translationQueueItem->setProjectId($projectId);
-            $translationQueueItem->setNamespace($translationItemObj->getNamespace());
+            $translationQueueItem->setTargetId(\RW\Models\Translation::idFactory($targetLanguage, $translationItemObj->getText()));
             $translationQueueItem->save();
 
             $projectItemCount++;
@@ -314,16 +322,59 @@ function diff($targetLanguage, $targetProvider, $limit)
 }
 
 /**
+ * Handle GCT
+ *
+ * @param $translationProjectItem \RW\Models\TranslationProject
+ * @param $gct
+ */
+function handleGCTProject($defaultLanguage, $translationProjectItem, $gct)
+{
+    if (empty($gct['project']) || empty($gct['key'])) {
+        throw new InvalidArgumentException("Unable to continue GCT project without project and key.");
+    }
+
+    $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
+
+    $projectId = $translationProjectItem->getId();
+
+    $targetLang = RW\Services\GoogleCloudTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
+    $sourceLang = RW\Services\GoogleCloudTranslation::transformTargetLang($defaultLanguage);
+
+    RW\Services\GoogleCloudTranslation::init($gct['project'], $gct['key']);
+
+    echo "Starting GCT translation project id: [$projectId]. Source Lang: [$sourceLang]. Target Lang: [$targetLang] \n";
+    /** @var $queuedItem \RW\Models\TranslationQueue */
+    foreach ($queuedItems as $queuedItem) {
+        list($sourceId, $__t, $__p) = RW\Models\TranslationQueue::idExplode($queuedItem->getId());
+        /** @var $translationItem RW\Models\Translation */
+        $translationItem = RW\Models\Translation::getById($sourceId);
+        $text = $translationItem->getText();
+
+        $queuedItem->setTargetResult(\RW\Services\GoogleCloudTranslation::translate($sourceLang, $targetLang, $text));
+        $queuedItem->setStatus(RW\Models\TranslationQueue::STATUS_READY);
+        $queuedItem->setModified(time());
+        $queuedItem->save();
+    }
+    $translationProjectItem->setModified(time());
+    $translationProjectItem->setStatus(\RW\Models\TranslationProject::STATUS_COMPLETED);
+    $translationProjectItem->save();
+}
+
+/**
  * Handle OHT
  * @param $translationProjectItem RW\Models\TranslationProject
  */
-function handleOHTProject($translationProjectItem, $oht)
+function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
 {
+    if (empty($oht['pubkey']) || empty($oht['secret'])) {
+        throw new InvalidArgumentException("Unable to continue OTH project without keys.");
+    }
+
     $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
 
     $projectId = $translationProjectItem->getId();
     $targetLang = RW\Services\OneHourTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
-    $sourceLang = RW\Services\OneHourTranslation::transformTargetLang(RW\Models\Translation::DEFAULT_LANGUAGE_CODE);
+    $sourceLang = RW\Services\OneHourTranslation::transformTargetLang($defaultLanguage);
 
     echo "Starting OHT translation project id: [$projectId]. Source Lang: [$sourceLang]. Target Lang: [$targetLang] \n";
 
