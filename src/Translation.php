@@ -142,6 +142,21 @@ class Translation
             }
         }
 
+        /**
+         * If it is live mode, translated and put it into cache
+         */
+        if ($this->live === true) {
+            if ($lang == $this->defaultLang) {
+                return $messages;
+            }
+            $sourceLang = GoogleCloudTranslation::transformTargetLang($this->defaultLang);
+            $targetLang = GoogleCloudTranslation::transformTargetLang($lang);
+            $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $messages);
+
+            $this->setCacheBatch($translatedMessages, $slugTextIdMapReversed);
+            return $translatedMessages;
+        }
+
         $results = $this->db->batchGetItem([
             'RequestItems' => [
                 $this->table => [
