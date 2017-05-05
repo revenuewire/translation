@@ -157,33 +157,35 @@ class Model
             return $this;
         }
 
-        $expressionAttributeNames = [];
-        $expressionAttributeValues = [];
-        $updateExpressionHolder = [];
-        foreach ($this->modifiedColumns as $field => $hasModified) {
-            if ($hasModified === true) {
-                $expressionAttributeNames['#' . $field] = $field;
-                $expressionAttributeValues[':'.$field] = self::$marshaller->marshalValue($this->data[$field]);
-                $updateExpressionHolder[] = "#$field = :$field";
+        if ($this->isModified()) {
+            $expressionAttributeNames = [];
+            $expressionAttributeValues = [];
+            $updateExpressionHolder = [];
+            foreach ($this->modifiedColumns as $field => $hasModified) {
+                if ($hasModified === true) {
+                    $expressionAttributeNames['#' . $field] = $field;
+                    $expressionAttributeValues[':'.$field] = self::$marshaller->marshalValue($this->data[$field]);
+                    $updateExpressionHolder[] = "#$field = :$field";
 
-                $this->modifiedColumns[$field] = false;
+                    $this->modifiedColumns[$field] = false;
+                }
             }
+            $updateExpression = implode(', ', $updateExpressionHolder);
+
+            $updateAttributes = [
+                'TableName' => $class::$table,
+                'Key' => array(
+                    'id' => self::$marshaller->marshalValue($this->getId())
+                ),
+                'ExpressionAttributeNames' =>$expressionAttributeNames,
+                'ExpressionAttributeValues' =>  $expressionAttributeValues,
+                'ConditionExpression' => 'attribute_exists(id)',
+                'UpdateExpression' => "set $updateExpression",
+                'ReturnValues' => 'ALL_NEW'
+            ];
+
+            $class::$client->updateItem($updateAttributes);
         }
-        $updateExpression = implode(', ', $updateExpressionHolder);
-
-        $updateAttributes = [
-            'TableName' => $class::$table,
-            'Key' => array(
-                'id' => self::$marshaller->marshalValue($this->getId())
-            ),
-            'ExpressionAttributeNames' =>$expressionAttributeNames,
-            'ExpressionAttributeValues' =>  $expressionAttributeValues,
-            'ConditionExpression' => 'attribute_exists(id)',
-            'UpdateExpression' => "set $updateExpression",
-            'ReturnValues' => 'ALL_NEW'
-        ];
-
-        $class::$client->updateItem($updateAttributes);
 
         return $this;
     }

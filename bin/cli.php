@@ -209,15 +209,22 @@ switch ($action) {
         break;
     case "push":
         $queueItems = RW\Models\TranslationQueue::getQueueItemsByStatus(RW\Models\TranslationQueue::STATUS_READY);
+
         /** @var $queueItem RW\Models\TranslationQueue*/
         foreach ($queueItems as $queueItem) {
             list($sourceId, $targetLanguage, $__p) = RW\Models\TranslationQueue::idExplode($queueItem->getId());
-            $translationItem = new RW\Models\Translation();
-            $translationItem->setId(RW\Models\Translation::idFactory($queueItem->getNamespace(), $targetLanguage,$queueItem->getTargetResult()));
-            $translationItem->setLang($targetLanguage);
+            $targetItemId = RW\Models\Translation::idFactory($queueItem->getNamespace(), $targetLanguage,$queueItem->getTargetResult());
+            $translationItem = \RW\Models\Translation::getById($targetItemId);
+
+            if ($translationItem == null) {
+                $translationItem = new RW\Models\Translation();
+                $translationItem->setId($targetItemId);
+                $translationItem->setLang($targetLanguage);
+                $translationItem->setNamespace($queueItem->getNamespace());
+            }
             $translationItem->setText($queueItem->getTargetResult());
-            $translationItem->setNamespace($queueItem->getNamespace());
             $translationItem->save();
+            echo "Target ID: [$targetItemId] pushed\n";
 
             $queueItem->setStatus(RW\Models\TranslationQueue::STATUS_COMPLETED);
             $queueItem->setModified(time());
