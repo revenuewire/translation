@@ -14,14 +14,14 @@ You need a Google Cloud account and key in order to use it.
 You also need **Redis** cache for better performance. 
 No **memcached** support yet.
 
-Requirement Summary
+###### Requirement Summary
 * Google Cloud Account
 * Redis
 
 ##### DB Mode
-Database mode uses AWS DynamoDB as a storage choice. 
+Database mode uses **AWS DynamoDB** as a storage choice. 
 **Redis** is suggested but not required.
-Requirement Summary
+###### Requirement Summary
 * AWS DynamoDB
 * Redis (optional)
 
@@ -31,14 +31,14 @@ Requirement Summary
 $defaultLanguage = "en";
 $supportLanguages = ["en", "fr", "zh"];
 $redisConfig = [
-    "host" => "YOUR REDIS HOST",
+    "host" => "REDIS_HOST",
     "timeout" => "0.5",
     "port" => "6379",
     "prefix" => "t_2sx_", //optional, to prevent cache key collision
 ];
 $gct = [
-    "project" => "YOUR GOOGLE CLOUD PROJECT ID",
-    "key" => "YOUR GOOGLE CLOUD PROJECT KEY"
+    "project" => "GOOGLE_CLOUD_PROJECT_ID",
+    "key" => "GOOGLE_CLOUD_PROJECT_KEY"
 ];
 $translationService = new \RW\Translation(null, $supportLanguages, $cache, $defaultLanguage, $gct);
 
