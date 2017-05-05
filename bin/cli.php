@@ -72,6 +72,25 @@ $action = $argv[$numOfOptions+1];
  * Code started.
  */
 switch ($action) {
+    case "init":
+        echo "Install translation table name: [{$options['translation']}] in region: [{$options['region']}] ...";
+        $schema = RW\Models\Translation::$schema;
+        $schema['TableName'] = \RW\Models\Translation::$table;
+        \RW\Models\Translation::$client->createTable($schema);
+        echo "done\n";
+
+        echo "Install translation queue table name: [{$options['translation_queue']}] in region: [{$options['region']}] ...";
+        $schema = RW\Models\TranslationQueue::$schema;
+        $schema['TableName'] = \RW\Models\TranslationQueue::$table;
+        \RW\Models\TranslationQueue::$client->createTable($schema);
+        echo "done\n";
+
+        echo "Install translation project table name: [{$options['translation_project']}] in region: [{$options['region']}] ...";
+        $schema = RW\Models\TranslationProject::$schema;
+        $schema['TableName'] = \RW\Models\TranslationProject::$table;
+        \RW\Models\TranslationProject::$client->createTable($schema);
+        echo "done\n";
+        break;
     case "diff":
         if (empty($options['provider']) || ($options['provider'] != 'OHT' && $options['provider'] != 'GCT')) {
             echo "Please specify the translation provider. We current support OHT and GCT. \n";

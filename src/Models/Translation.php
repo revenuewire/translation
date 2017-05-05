@@ -20,6 +20,10 @@ class Translation extends Model
             [
                 'AttributeName' => 'id',
                 'AttributeType' => 'S',
+            ],
+            [
+                'AttributeName' => 'l',
+                'AttributeType' => 'S',
             ]
         ],
         'KeySchema' => [
@@ -31,7 +35,7 @@ class Translation extends Model
 
         'GlobalSecondaryIndexes' => [
             [
-                'IndexName' => 'lang-idx',
+                'IndexName' => 'l-idx',
                 'KeySchema' => [
                     [
                         'AttributeName' => 'l', // REQUIRED

@@ -16,6 +16,10 @@ class TranslationProject extends Model
             [
                 'AttributeName' => 'id',
                 'AttributeType' => 'S',
+            ],
+            [
+                'AttributeName' => 'status',
+                'AttributeType' => 'S',
             ]
         ],
         'KeySchema' => [

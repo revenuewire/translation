@@ -14,6 +14,14 @@ class TranslationQueue extends Model
             [
                 'AttributeName' => 'id',
                 'AttributeType' => 'S',
+            ],
+            [
+                'AttributeName' => 'projectId',
+                'AttributeType' => 'S',
+            ],
+            [
+                'AttributeName' => 'status',
+                'AttributeType' => 'S',
             ]
         ],
         'KeySchema' => [
