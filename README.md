@@ -1,11 +1,22 @@
-# translation
-Translation Services
-
 ## Install
 `composer require revenuewire/translation`
 
+# Description
+Translation Services using DyanmoDB or Redis as cache 
+options. We also embedded two translation service 
+providers, [One Hour Translation](https://www.onehourtranslation.com/) 
+and [Google Cloud Translation](https://cloud.google.com/translate/). 
+
+**OneHourTranslation** provides human translators to 
+translate your project where **Google Cloud Translation**
+charges a flat fee for 
+[Neural Machine Translation (NMT)](https://research.googleblog.com/2016/09/a-neural-network-for-machine.html).
+Both service providers provide simple machine translation
+but are not supported for the purpose of this project.
+
 ## Requirements 
-Generally, there are two modes (live or db) of configurations you can choose from.  
+Generally, there are two modes (live or db) of configurations you can 
+choose from.  
 
 ##### Live Mode 
 Live mode uses **Google Cloud Translation** APIs that 
