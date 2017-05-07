@@ -1,7 +1,7 @@
 ## Install
 `composer require revenuewire/translation`
 
-# Description
+## Description
 Translation Services using DyanmoDB or Redis as cache 
 options. We also embedded two translation service 
 providers, [One Hour Translation](https://www.onehourtranslation.com/) 
