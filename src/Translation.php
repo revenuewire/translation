@@ -56,10 +56,7 @@ class Translation
         if (!empty($dynamoSettings) && !empty($dynamoSettings['region'])
                 && !empty($dynamoSettings['version']) && !empty($dynamoSettings['table'])) {
             /** @var $db DynamoDbClient */
-            $this->db = new DynamoDbClient(array(
-                "region" => $dynamoSettings['region'],
-                'version' => $dynamoSettings['version'],
-            ));
+            $this->db = new DynamoDbClient($dynamoSettings);
             $this->table = $dynamoSettings['table'];
             /** @var marshaler Marshaler */
             $this->marshaler = new Marshaler();
