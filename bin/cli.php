@@ -7,6 +7,7 @@ date_default_timezone_set( 'UTC' );
 
 $options = getopt('', [
     'region::', 'translation::', 'translation_queue::', 'translation_project::',
+    'dynamo_endpoint::', 'dynamo_version::',
     'provider::', 'limit::', 'default_language::',
     'oth_pubkey::', 'oth_secret::', 'oth_sandbox::', 'oth_note::',
     'oth_tag::', 'oth_expertise::', 'oth_callback::',
@@ -38,24 +39,30 @@ if (empty($options['translation_project'])) {
     exit;
 }
 
+$dynamoVersion = empty($options['dynamo_version']) ? "2012-08-10" : $options['dynamo_version'];
+$dynamoEndpoint = empty($options['dynamo_endpoint']) ? null : $options['dynamo_endpoint'];
+
 $translationConfig = [
     "name" => $options['translation'],
     "region" => $options['region'],
-    "version" => "2012-08-10"
+    "version" => $dynamoVersion,
+    "endpoint" => $dynamoEndpoint,
 ];
 RW\Models\Translation::init($translationConfig);
 
 $translationQueueConfig = [
     "name" => $options['translation_queue'],
     "region" => $options['region'],
-    "version" => "2012-08-10"
+    "version" => $dynamoVersion,
+    "endpoint" => $dynamoEndpoint,
 ];
 RW\Models\TranslationQueue::init($translationQueueConfig);
 
 $translationProjectConfig = [
     "name" => $options['translation_project'],
     "region" => $options['region'],
-    "version" => "2012-08-10"
+    "version" => $dynamoVersion,
+    "endpoint" => $dynamoEndpoint,
 ];
 RW\Models\TranslationProject::init($translationProjectConfig);
 
