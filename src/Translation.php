@@ -356,7 +356,7 @@ class Translation
      */
     private function getCacheKey($key)
     {
-        return $this->cachePrefix . $key;
+        return $this->cachePrefix . ':' . $key;
     }
 
     /**
