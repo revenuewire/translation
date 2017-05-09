@@ -85,12 +85,10 @@ class Model
      */
     public static function init($table)
     {
-        $class = get_called_class();
-        $class::$client = new DynamoDbClient([
-            "region" => $table['region'],
-            "version" => $table['version'],
-        ]);
         self::$marshaller = new Marshaler();
+
+        $class = get_called_class();
+        $class::$client = new DynamoDbClient($table);
         $class::$table = $table['name'];
     }
 

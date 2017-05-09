@@ -116,7 +116,7 @@ class Translation extends Model
         do {
             $queryAttributes = array(
                 'TableName' => self::$table,
-                'IndexName' => 'l-index',
+                'IndexName' => 'l-idx',
                 'ExpressionAttributeNames' => array(
                     '#l' => 'l'
                 ),
