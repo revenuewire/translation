@@ -222,7 +222,7 @@ class OneHourTranslation
             return self::$lang639_1[$lang];
         }
 
-        throw new \InvalidArgumentException("The target language is not supported by this provider.");
+        return false;
     }
 
     /** @var $oht \com\OHT\API\OHTAPI */

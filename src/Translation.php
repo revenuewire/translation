@@ -5,6 +5,7 @@ use Aws\DynamoDb\DynamoDbClient;
 use Aws\DynamoDb\Marshaler;
 use Predis\Client;
 use RW\Services\GoogleCloudTranslation;
+use RW\Services\OneHourTranslation;
 
 class Translation
 {
@@ -25,6 +26,7 @@ class Translation
     public $defaultLang = \RW\Models\Translation::DEFAULT_LANGUAGE_CODE;
 
     public $live = false;
+    public $excludeFromLiveTranslation = [];
 
     /**
      * Translation constructor.
@@ -34,11 +36,25 @@ class Translation
      * @param null $cache
      * @param null $defaultLang
      * @param null $gct
+     * @param array|null $excludeFromLiveTranslation a list of language you do not want GCT neural translation (live translation)
      */
-    function __construct($dynamoSettings = null, $supportLanguages = array('en'), $cache = null, $defaultLang = null, $gct = null)
+    function __construct($dynamoSettings = null,
+                            $supportLanguages = ['en'],
+                            $cache = null,
+                            $defaultLang = null,
+                            $gct = null,
+                            $excludeFromLiveTranslation = [])
     {
         if (!empty($defaultLang)) {
             $this->defaultLang = $defaultLang;
+        }
+
+        //check if we can support the given languages
+        foreach ($supportLanguages as $language) {
+            if (GoogleCloudTranslation::transformTargetLang($language) === false
+                    && OneHourTranslation::transformTargetLang($language) === false) {
+                throw new \InvalidArgumentException("Unable to support the language translation [$language].");
+            }
         }
         $this->supportLanguages = $supportLanguages;
 
@@ -49,6 +65,7 @@ class Translation
             GoogleCloudTranslation::init($gct['project'], $gct['key']);
             $this->live = true;
         }
+        $this->excludeFromLiveTranslation = $excludeFromLiveTranslation;
 
         /**
          * Using DynamoDB as storage of the translation
@@ -78,7 +95,7 @@ class Translation
             }
         }
 
-        if ($this->live == false && $this->db === null) {
+        if ($this->db === null) {
             throw new \InvalidArgumentException("Unable to start translation without db support.");
         }
 
@@ -142,7 +159,7 @@ class Translation
         /**
          * If it is live mode, translated and put it into cache
          */
-        if ($this->live === true) {
+        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
             if ($lang == $this->defaultLang) {
                 return $messages;
             }
@@ -241,7 +258,7 @@ class Translation
         /**
          * If it is live mode, translated and put it into cache
          */
-        if ($this->live === true) {
+        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
             if ($lang == $this->defaultLang) {
                 return $text;
             }

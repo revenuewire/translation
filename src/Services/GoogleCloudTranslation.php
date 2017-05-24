@@ -88,7 +88,7 @@ class GoogleCloudTranslation
             return $lang;
         }
 
-        throw new \InvalidArgumentException("The target language is not supported by this provider. [$lang]");
+        return false;
     }
 
     /**
