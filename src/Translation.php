@@ -95,6 +95,16 @@ class Translation
             }
         }
 
+        if ($this->live == true) {
+            $languages = array_diff($supportLanguages, $excludeFromLiveTranslation);
+            //check if we can support the given languages
+            foreach ($languages as $language) {
+                if (GoogleCloudTranslation::transformTargetLang($language) === false){
+                    throw new \InvalidArgumentException("Unable to support the language translation [$language].");
+                }
+            }
+        }
+
         if ($this->db === null) {
             throw new \InvalidArgumentException("Unable to start translation without db support.");
         }
