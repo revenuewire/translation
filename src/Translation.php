@@ -100,7 +100,7 @@ class Translation
             //check if we can support the given languages
             foreach ($languages as $language) {
                 if (GoogleCloudTranslation::transformTargetLang($language) === false){
-                    throw new \InvalidArgumentException("Unable to support the language translation [$language].");
+                    throw new \InvalidArgumentException("Unable to support the language translation in live mode. [$language].");
                 }
             }
         }
