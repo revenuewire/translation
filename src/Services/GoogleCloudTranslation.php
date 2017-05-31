@@ -67,31 +67,6 @@ class GoogleCloudTranslation
     }
 
     /**
-     * Get The language code match to the target provider.
-     *
-     * @param $lang
-     *
-     * @return mixed
-     */
-    public static function transformTargetLang($lang)
-    {
-        if (in_array($lang, self::$supportedLanguages)) {
-            return $lang;
-        }
-        //in case client uses ISO 639.2 format
-        $lang = substr($lang, 0, 2);
-        if ($lang == "zh") {
-            return "zh-CN";
-        }
-
-        if (in_array($lang, self::$supportedLanguages)) {
-            return $lang;
-        }
-
-        return false;
-    }
-
-    /**
      * Translate
      *
      * @param $sourceLanguage

@@ -5,6 +5,7 @@ use Aws\DynamoDb\DynamoDbClient;
 use Aws\DynamoDb\Marshaler;
 use Predis\Client;
 use RW\Services\GoogleCloudTranslation;
+use RW\Services\Languges;
 use RW\Services\OneHourTranslation;
 
 class Translation
@@ -51,8 +52,8 @@ class Translation
 
         //check if we can support the given languages
         foreach ($supportLanguages as $language) {
-            if (GoogleCloudTranslation::transformTargetLang($language) === false
-                    && OneHourTranslation::transformTargetLang($language) === false) {
+            if (Languges::transformLanguageCodeToGTC($language) === false
+                    && Languges::transformLanguageCodeToOTH($language) === false) {
                 throw new \InvalidArgumentException("Unable to support the language translation [$language].");
             }
         }
@@ -99,7 +100,7 @@ class Translation
             $languages = array_diff($supportLanguages, $excludeFromLiveTranslation);
             //check if we can support the given languages
             foreach ($languages as $language) {
-                if (GoogleCloudTranslation::transformTargetLang($language) === false){
+                if (Languges::transformLanguageCodeToGTC($language) === false){
                     throw new \InvalidArgumentException("Unable to support the language translation in live mode. [$language].");
                 }
             }
@@ -128,11 +129,15 @@ class Translation
             $lang = $this->defaultLang;
         }
 
-        if (!in_array($lang, $this->supportLanguages)) {
+        if (empty($messages)) {
             return $messages;
         }
 
-        if (empty($messages)) {
+        /**
+         * If language is not in supported languages, just return original text back
+         */
+        $lang = Languges::transformLanguageCode($lang);
+        if (in_array($lang, $this->supportLanguages)) {
             return $messages;
         }
 
@@ -173,8 +178,8 @@ class Translation
             if ($lang == $this->defaultLang) {
                 return $messages;
             }
-            $sourceLang = GoogleCloudTranslation::transformTargetLang($this->defaultLang);
-            $targetLang = GoogleCloudTranslation::transformTargetLang($lang);
+            $sourceLang = Languges::transformLanguageCodeToGTC($this->defaultLang);
+            $targetLang = Languges::transformLanguageCodeToGTC($lang);
             $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $messages);
 
             $this->setCacheBatch($translatedMessages, $slugTextIdMapReversed);
@@ -253,7 +258,8 @@ class Translation
         /**
          * If language is not in supported languages, just return original text back
          */
-        if (!in_array($lang, $this->supportLanguages)) {
+        $lang = Languges::transformLanguageCode($lang);
+        if (in_array($lang, $this->supportLanguages)) {
             return $text;
         }
 
@@ -272,8 +278,8 @@ class Translation
             if ($lang == $this->defaultLang) {
                 return $text;
             }
-            $sourceLang = GoogleCloudTranslation::transformTargetLang($this->defaultLang);
-            $targetLang = GoogleCloudTranslation::transformTargetLang($lang);
+            $sourceLang = Languges::transformLanguageCodeToGTC($this->defaultLang);
+            $targetLang = Languges::transformLanguageCodeToGTC($lang);
             $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
             $this->setCache($id, $translatedText);
 

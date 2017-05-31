@@ -344,8 +344,8 @@ function handleGCTProject($defaultLanguage, $translationProjectItem, $gct)
 
     $projectId = $translationProjectItem->getId();
 
-    $targetLang = RW\Services\GoogleCloudTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
-    $sourceLang = RW\Services\GoogleCloudTranslation::transformTargetLang($defaultLanguage);
+    $targetLang = \RW\Services\Languges::transformLanguageCodeToGTC($translationProjectItem->getTargetLanguage());
+    $sourceLang = \RW\Services\Languges::transformLanguageCodeToGTC($defaultLanguage);
 
     RW\Services\GoogleCloudTranslation::init($gct['project'], $gct['key']);
 
@@ -380,8 +380,8 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
     $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
 
     $projectId = $translationProjectItem->getId();
-    $targetLang = RW\Services\OneHourTranslation::transformTargetLang($translationProjectItem->getTargetLanguage());
-    $sourceLang = RW\Services\OneHourTranslation::transformTargetLang($defaultLanguage);
+    $targetLang = RW\Services\Languges::transformLanguageCodeToOTH($translationProjectItem->getTargetLanguage());
+    $sourceLang = RW\Services\Languges::transformLanguageCodeToOTH($defaultLanguage);
 
     echo "Starting OHT translation project id: [$projectId]. Source Lang: [$sourceLang]. Target Lang: [$targetLang] \n";
 
