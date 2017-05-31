@@ -137,7 +137,7 @@ class Translation
          * If language is not in supported languages, just return original text back
          */
         $lang = Languges::transformLanguageCode($lang);
-        if (in_array($lang, $this->supportLanguages)) {
+        if (!in_array($lang, $this->supportLanguages)) {
             return $messages;
         }
 
@@ -259,7 +259,7 @@ class Translation
          * If language is not in supported languages, just return original text back
          */
         $lang = Languges::transformLanguageCode($lang);
-        if (in_array($lang, $this->supportLanguages)) {
+        if (!in_array($lang, $this->supportLanguages)) {
             return $text;
         }
 
