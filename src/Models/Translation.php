@@ -1,7 +1,7 @@
 <?php
 namespace RW\Models;
 use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
+use RW\Services\Languges;
 use RW\Utils;
 
 /**
@@ -9,7 +9,6 @@ use RW\Utils;
  */
 class Translation extends Model
 {
-    const DEFAULT_LANGUAGE_CODE = "en";
     const MAX_KEY_LENGTH = 50;
 
     /**
@@ -108,7 +107,7 @@ class Translation extends Model
      *
      * @return array
      */
-    public static function getAllTextsByLanguage($lang = self::DEFAULT_LANGUAGE_CODE, $limit = null)
+    public static function getAllTextsByLanguage($lang = Languges::DEFAULT_LANGUAGE_CODE, $limit = null)
     {
         $lastEvaluatedKey = null;
         $items = [];

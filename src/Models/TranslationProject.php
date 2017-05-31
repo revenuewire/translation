@@ -1,7 +1,6 @@
 <?php
 namespace RW\Models;
 use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
 
 /**
  * Translation Project

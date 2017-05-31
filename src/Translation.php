@@ -6,7 +6,6 @@ use Aws\DynamoDb\Marshaler;
 use Predis\Client;
 use RW\Services\GoogleCloudTranslation;
 use RW\Services\Languges;
-use RW\Services\OneHourTranslation;
 
 class Translation
 {
@@ -24,7 +23,7 @@ class Translation
     /** @var $cache Client  */
     public $cache = null;
     public $cachePrefix = null;
-    public $defaultLang = \RW\Models\Translation::DEFAULT_LANGUAGE_CODE;
+    public $defaultLang = Languges::DEFAULT_LANGUAGE_CODE;
 
     public $live = false;
     public $excludeFromLiveTranslation = [];

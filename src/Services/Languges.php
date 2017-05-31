@@ -8,6 +8,8 @@ namespace RW\Services;
 
 class Languges
 {
+    const DEFAULT_LANGUAGE_CODE = "en";
+
     /**
      * A list of supported languages
      * Most language code parameters conform to ISO-639-1 identifiers, except where noted.
@@ -104,5 +106,25 @@ class Languges
         }
 
         return self::$supportedLanguages[$lang]['oht'];
+    }
+
+    /**
+     * Get Browser Language
+     *
+     * @return bool|string
+     */
+    public static function getBrowserLanguage()
+    {
+        if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $locale = \Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+            if ($locale == 'zh') {
+                $locales = explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
+                $locale = array_shift($locales);
+            }
+            $locale = str_replace('_', '-', strtolower($locale));
+            return $locale;
+        }
+
+        return self::DEFAULT_LANGUAGE_CODE;
     }
 }
