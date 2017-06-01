@@ -167,7 +167,7 @@ php vendor/revenuewire/translation/bin/cli.php \
 ## Languages Support
 Most language code parameters conform to ISO-639-1 identifiers, except where noted.
 
-| Code  | GCT	| OHT         | Language |	Display | Comments|
+| Code  | Google Cloud Translation	| One Hour Translation         | Language |	Display | Comments|
 | ----- |:------:|:----------:|:---------:|:---------:|:--------:|
 | en    | en    | en-us       | English | English | |
 | af    | af    | af          | Afrikaans |
