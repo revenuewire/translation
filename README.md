@@ -170,9 +170,9 @@ Most language code parameters conform to ISO-639-1 identifiers, except where not
 | Code  | Google Cloud Translation	| One Hour Translation         | Language |	Display | Comments|
 | ----- |:------:|:----------:|:---------:|:---------:|:--------:|
 | en    | en    | en-us       | English | English | |
-| af    | af    | af          | Afrikaans |
-| ar    | ar    | ar-sa       | Arabic | العربية
-| bg    | bg    | bg-bg       | Bulgarian |
+| af    | af    | af          | Afrikaans | |
+| ar    | ar    | ar-sa       | Arabic | العربية | |
+| bg    | bg    | bg-bg       | Bulgarian | | |
 | zh    | zh    | zh-cn-cmn-s | Chinese | 中文 | Note: by default, zh is mapped into Chinese (Simple) |
 | zh-cn | zh-cn | zh-cn-cmn-s | Chinese (Simple) | 简体中文 | BCP-47 |
 | zh-tw | zh-tw | zh-cn-cmn-t | Chinese (Traditional) | 繁體中文 | BCP-47 |
@@ -193,8 +193,8 @@ Most language code parameters conform to ISO-639-1 identifiers, except where not
 | no    | no	| no-no       | Norwegian | Norsk
 | pl    | pl	| pl-pl       | Polish | polski
 | pt    | pt	| pt-pt       | Portuguese | português
-| pt-br | pt	| pt-br       | Portuguese (Brazil) | português - Brasil | ISO-639-2 Note: If using Google Cloud Translation, the pt-br will be translated to pt-pt.
-| pt-pt | pt	| pt-pt       | Portuguese (Portugal) | português | ISO-639-2
+| pt-br | pt	| pt-br       | Portuguese (Brazil) | português - Brasil | ISO-639-2 Note: If using Google Cloud Translation, the pt-br will be translated to pt-pt. Exclude pt-br from Live Translation if the behavior is not desired. |
+| pt-pt | pt	| pt-pt       | Portuguese (Portugal) | português | ISO-639-2 |
 | ro    | ro	| ro-ro       | Romanian
 | ru    | ru	| ru-ru       | Russian | Русский
 | sk    | sk	| sk-sk       | Slovak
