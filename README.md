@@ -167,40 +167,40 @@ php vendor/revenuewire/translation/bin/cli.php \
 ## Languages Support
 Most language code parameters conform to ISO-639-1 identifiers, except where noted.
 
-| Code  | Google Cloud Translation	| One Hour Translation         | Language |	Display | Comments|
+| Code | Google Cloud Translation       | One Hour Translation | Language |     Display | Note |
 | ----- |:------:|:----------:|:---------:|:---------:|:--------:|
-| en    | en    | en-us       | English | English | |
-| af    | af    | af          | Afrikaans | |
-| ar    | ar    | ar-sa       | Arabic | العربية | |
-| bg    | bg    | bg-bg       | Bulgarian | | |
-| zh    | zh    | zh-cn-cmn-s | Chinese | 中文 | Note: by default, zh is mapped into Chinese (Simple) |
+| en | en | en-us | English | English |  |
+| af | af | af | Afrikaans | Afrikaans |  |
+| ar | ar | ar-sa | Arabic | العربية |  |
+| bg | bg | bg-bg | Bulgarian | Български |  |
+| zh | zh | zh-cn-cmn-s | Chinese (Simple) | 简体中文 |  |
 | zh-cn | zh-cn | zh-cn-cmn-s | Chinese (Simple) | 简体中文 | BCP-47 |
 | zh-tw | zh-tw | zh-cn-cmn-t | Chinese (Traditional) | 繁體中文 | BCP-47 |
-| hr    | hr    | hr-hr       | Croatian
-| cs    | cs	| cs-cz       | Czech  | český
-| da    | da	| da-dk       | Danish | dansk
-| nl    | nl	| nl-nl       | Dutch  | Nederlands
-| fr    | fr	| fr-fr       | French | français
-| de    | de	| de-de       | German | Deutsch
-| el    | el	| el-gr       | Greek | ελληνικά
-| iw    | iw	| N/A         | Hebrew
-| hi    | hi	| hi-in       | Hindi | हिन्दी
-| is    | is	| is-is       | Icelandic
-| id    | id	| id-id       | Indonesian | Bahasa Indonesia
-| it    | it	| it-it       | Italian | italiano
-| ja    | ja	| jp-jp       | Japanese | 日本語
-| ko    | ko	| ko-kp       | Korean | 한국어
-| no    | no	| no-no       | Norwegian | Norsk
-| pl    | pl	| pl-pl       | Polish | polski
-| pt    | pt	| pt-pt       | Portuguese | português
-| pt-br | pt	| pt-br       | Portuguese (Brazil) | português - Brasil | ISO-639-2 Note: If using Google Cloud Translation, the pt-br will be translated to pt-pt. Exclude pt-br from Live Translation if the behavior is not desired. |
-| pt-pt | pt	| pt-pt       | Portuguese (Portugal) | português | ISO-639-2 |
-| ro    | ro	| ro-ro       | Romanian
-| ru    | ru	| ru-ru       | Russian | Русский
-| sk    | sk	| sk-sk       | Slovak
-| es    | es	| es-es       | Spanish | español
-| sv    | sv	| sv-se       | Swedish | svenska
-| th    | th	| th-th       | Thai | ภาษาไทย
-| tr    | tr	| tr-tr       | Turkish | Türkçe
-| vi    | vi	| vi-vn       | Vietnamese | Tiếng Việt
-| fi    | N/A	| fi-fi       | Finnish | suomi
+| hr | hr | hr-hr | Croatian | hrvatski |  |
+| cs | cs | cs-cz | Czech | český |  |
+| da | da | da-dk | Danish | dansk |  |
+| nl | nl | nl-nl | Dutch | Nederlands |  |
+| fr | fr | fr-fr | French | français |  |
+| de | de | de-de | German | Deutsch |  |
+| el | el | el-gr | Greek | ελληνικά |  |
+| iw | iw | N/A | Hebrew | עברית |  |
+| hi | hi | hi-in | Hindi | हिन्दी |  |
+| is | is | is-is | Icelandic | íslenska |  |
+| id | id | id-id | Indonesian | Bahasa Indonesia |  |
+| it | it | it-it | Italian | italiano |  |
+| ja | ja | jp-jp | Japanese | 日本語 |  |
+| ko | ko | ko-kp | Korean | 한국어 |  |
+| no | no | no-no | Norwegian | Norsk |  |
+| pl | pl | pl-pl | Polish | polski |  |
+| pt | pt | pt-pt | Portuguese | português |  |
+| pt-br | N/A | pt-br | Portuguese (Brazil) | português - Brasil | ISO 639.2 |
+| pt-pt | pt | pt-pt | Portuguese (Portugal) | português | ISO 639.2 |
+| ro | ro | ro-ro | Romanian | limba română  |  |
+| ru | ru | ru-ru | Russian | Русский |  |
+| sk | sk | sk-sk | Slovak | slovenčina |  |
+| es | es | es-es | Spanish | español |  |
+| sv | sv | sv-se | Swedish | svenska |  |
+| th | th | th-th | Thai | ภาษาไทย |  |
+| tr | tr | tr-tr | Turkish | Türkçe |  |
+| vi | vi | vi-vn | Vietnamese | Tiếng Việt |  |
+| fi | N/A | fi-fi | Finnish | suomi |  |

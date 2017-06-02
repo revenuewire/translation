@@ -16,41 +16,185 @@ class Languges
      * @var array
      */
     public static $supportedLanguages = [
-        "en" => ['gct' => "en", 'oht' => "en-us"],
-        "af" => ['gct' => "af", 'oht' => "af"],
-        "ar" => ['gct' => "ar", 'oht' => "ar-sa"],
-        "bg" => ['gct' => "bg", 'oht' => "bg-bg"],
-        "zh" => ['gct' => "zh", 'oht' => "zh-cn-cmn-s"],
-        "zh-cn" => ['gct' => "zh-cn", 'oht' => "zh-cn-cmn-s"], //BCP-47
-        "zh-tw" => ['gct' => "zh-tw", 'oht' => "zh-cn-cmn-t"], //BCP-47
-        "hr" => ['gct' => "hr", 'oht' => "hr-hr"],
-        "cs" => ['gct' => "cs", 'oht' => "cs-cz"],
-        "da" => ['gct' => "da", 'oht' => "da-dk"],
-        "nl" => ['gct' => "nl", 'oht' => "nl-nl"],
-        "fr" => ['gct' => "fr", 'oht' => "fr-fr"],
-        "de" => ['gct' => "de", 'oht' => "de-de"],
-        "el" => ['gct' => "el", 'oht' => "el-gr"],
-        "iw" => ['gct' => "iw"],
-        "hi" => ['gct' => "hi", 'oht' => "hi-in"],
-        "is" => ['gct' => "is", 'oht' => "is-is"],
-        "id" => ['gct' => "id", 'oht' => "id-id"],
-        "it" => ['gct' => "it", 'oht' => "it-it"],
-        "ja" => ['gct' => "ja", 'oht' => "jp-jp"],
-        "ko" => ['gct' => "ko", 'oht' => "ko-kp"],
-        "no" => ['gct' => "no", 'oht' => "no-no"],
-        "pl" => ['gct' => "pl", 'oht' => "pl-pl"],
-        "pt" => ['gct' => "pt", 'oht' => "pt-pt"],
-        "pt-br" => ['gct' => "pt", 'oht' => "pt-br"], //ISO 639.2
-        "pt-pt" => ['gct' => "pt", 'oht' => "pt-pt"], //ISO 639.2
-        "ro" => ['gct' => "ro", 'oht' => "ro-ro"],
-        "ru" => ['gct' => "ru", 'oht' => "ru-ru"],
-        "sk" => ['gct' => "sk", 'oht' => "sk-sk"],
-        "es" => ['gct' => "es", 'oht' => "es-es"],
-        "sv" => ['gct' => "sv", 'oht' => "sv-se"],
-        "th" => ['gct' => "th", 'oht' => "th-th"],
-        "tr" => ['gct' => "tr", 'oht' => "tr-tr"],
-        "vi" => ['gct' => "vi", 'oht' => "vi-vn"],
-        "fi" => ['oht' => "fi-fi"],
+        "en" => [
+            "language" => "English",
+            "display" => "English",
+            "providers" => ['gct' => "en", 'oht' => "en-us"]
+        ],
+        "af" => [
+            "language" => "Afrikaans",
+            "display" => "Afrikaans",
+            "providers" => ['gct' => "af", 'oht' => "af"],
+        ],
+        "ar" => [
+            "language" => "Arabic",
+            "display" => "العربية",
+            "providers" =>['gct' => "ar", 'oht' => "ar-sa"],
+        ],
+        "bg" => [
+            "language" => "Bulgarian",
+            "display" => "Български",
+            "providers" =>['gct' => "bg", 'oht' => "bg-bg"],
+        ],
+        "zh" => [
+            "language" => "Chinese (Simple)",
+            "display" => "简体中文",
+            "providers" =>['gct' => "zh", 'oht' => "zh-cn-cmn-s"],
+        ],
+        "zh-cn" => [
+            "language" => "Chinese (Simple)",
+            "display" => "简体中文",
+            "providers" =>['gct' => "zh-cn", 'oht' => "zh-cn-cmn-s"],
+            "comments" => "BCP-47",
+        ],
+        "zh-tw" => [
+            "language" => "Chinese (Traditional)",
+            "display" => "繁體中文",
+            "providers" =>['gct' => "zh-tw", 'oht' => "zh-cn-cmn-t"],
+            "comments" => "BCP-47",
+        ],
+        "hr" => [
+            "language" => "Croatian",
+            "display" => "hrvatski",
+            "providers" =>['gct' => "hr", 'oht' => "hr-hr"],
+        ],
+        "cs" => [
+            "language" => "Czech",
+            "display" => "český",
+            "providers" =>['gct' => "cs", 'oht' => "cs-cz"],
+        ],
+        "da" => [
+            "language" => "Danish",
+            "display" => "dansk",
+            "providers" =>['gct' => "da", 'oht' => "da-dk"],
+        ],
+        "nl" => [
+            "language" => "Dutch",
+            "display" => "Nederlands",
+            "providers" =>['gct' => "nl", 'oht' => "nl-nl"],
+        ],
+        "fr" => [
+            "language" => "French",
+            "display" => "français",
+            "providers" =>['gct' => "fr", 'oht' => "fr-fr"],
+        ],
+        "de" => [
+            "language" => "German",
+            "display" => "Deutsch",
+            "providers" =>['gct' => "de", 'oht' => "de-de"],
+        ],
+        "el" => [
+            "language" => "Greek",
+            "display" => "ελληνικά",
+            "providers" =>['gct' => "el", 'oht' => "el-gr"],
+        ],
+        "iw" => [
+            "language" => "Hebrew",
+            "display" => "עברית",
+            "providers" =>['gct' => "iw"],
+        ],
+        "hi" => [
+            "language" => "Hindi",
+            "display" => "हिन्दी",
+            "providers" =>['gct' => "hi", 'oht' => "hi-in"],
+        ],
+        "is" => [
+            "language" => "Icelandic",
+            "display" => "íslenska",
+            "providers" =>['gct' => "is", 'oht' => "is-is"],
+        ],
+        "id" => [
+            "language" => "Indonesian",
+            "display" => "Bahasa Indonesia",
+            "providers" =>['gct' => "id", 'oht' => "id-id"],
+        ],
+        "it" => [
+            "language" => "Italian",
+            "display" => "italiano",
+            "providers" =>['gct' => "it", 'oht' => "it-it"],
+        ],
+        "ja" => [
+            "language" => "Japanese",
+            "display" => "日本語",
+            "providers" =>['gct' => "ja", 'oht' => "jp-jp"],
+        ],
+        "ko" => [
+            "language" => "Korean",
+            "display" => "한국어",
+            "providers" =>['gct' => "ko", 'oht' => "ko-kp"],
+        ],
+        "no" => [
+            "language" => "Norwegian",
+            "display" => "Norsk",
+            "providers" =>['gct' => "no", 'oht' => "no-no"],
+        ],
+        "pl" => [
+            "language" => "Polish",
+            "display" => "polski",
+            "providers" =>['gct' => "pl", 'oht' => "pl-pl"],
+        ],
+        "pt" => [
+            "language" => "Portuguese",
+            "display" => "português",
+            "providers" =>['gct' => "pt", 'oht' => "pt-pt"],
+        ],
+        "pt-br" => [
+            "language" => "Portuguese (Brazil)",
+            "display" => "português - Brasil",
+            "providers" =>['oht' => "pt-br"],
+            "comments" => "ISO 639.2",
+        ],
+        "pt-pt" => [
+            "language" => "Portuguese (Portugal)",
+            "display" => "português",
+            "providers" =>['gct' => "pt", 'oht' => "pt-pt"],
+            "comments" => "ISO 639.2",
+        ],
+        "ro" => [
+            "language" => "Romanian",
+            "display" => "limba română ",
+            "providers" =>['gct' => "ro", 'oht' => "ro-ro"],
+        ],
+        "ru" => [
+            "language" => "Russian",
+            "display" => "Русский",
+            "providers" =>['gct' => "ru", 'oht' => "ru-ru"],
+        ],
+        "sk" => [
+            "language" => "Slovak",
+            "display" => "slovenčina",
+            "providers" =>['gct' => "sk", 'oht' => "sk-sk"],
+        ],
+        "es" => [
+            "language" => "Spanish",
+            "display" => "español",
+            "providers" =>['gct' => "es", 'oht' => "es-es"],
+        ],
+        "sv" => [
+            "language" => "Swedish",
+            "display" => "svenska",
+            "providers" =>['gct' => "sv", 'oht' => "sv-se"],
+        ],
+        "th" => [
+            "language" => "Thai",
+            "display" => "ภาษาไทย",
+            "providers" =>['gct' => "th", 'oht' => "th-th"],
+        ],
+        "tr" => [
+            "language" => "Turkish",
+            "display" => "Türkçe",
+            "providers" =>['gct' => "tr", 'oht' => "tr-tr"],
+        ],
+        "vi" => [
+            "language" => "Vietnamese",
+            "display" => "Tiếng Việt",
+            "providers" =>['gct' => "vi", 'oht' => "vi-vn"],
+        ],
+        "fi" => [
+            "language" => "Finnish",
+            "display" => "suomi",
+            "providers" =>['oht' => "fi-fi"],
+        ],
     ];
 
     /**
@@ -85,11 +229,11 @@ class Languges
      */
     public static function transformLanguageCodeToGTC($lang)
     {
-        if (empty(self::$supportedLanguages[$lang]['gct'])) {
+        if (empty(self::$supportedLanguages[$lang]['providers']['gct'])) {
            return false;
         }
 
-        return self::$supportedLanguages[$lang]['gct'];
+        return self::$supportedLanguages[$lang]['providers']['gct'];
     }
 
     /**
@@ -101,11 +245,11 @@ class Languges
      */
     public static function transformLanguageCodeToOTH($lang)
     {
-        if (empty(self::$supportedLanguages[$lang]['oht'])) {
+        if (empty(self::$supportedLanguages[$lang]['providers']['oht'])) {
             return false;
         }
 
-        return self::$supportedLanguages[$lang]['oht'];
+        return self::$supportedLanguages[$lang]['providers']['oht'];
     }
 
     /**
@@ -126,5 +270,27 @@ class Languges
         }
 
         return self::DEFAULT_LANGUAGE_CODE;
+    }
+
+    /**
+     * Get Markdown Format
+     */
+    public static function getLanguagesMarkdown()
+    {
+        $mark = [
+            "| Code | Google Cloud Translation	| One Hour Translation | Language |	Display | Note |",
+            "| ----- |:------:|:----------:|:---------:|:---------:|:--------:|",
+        ];
+        foreach (self::$supportedLanguages as $k => $v) {
+            $mark[] = "| " . implode(' | ', [
+                $k,
+                isset($v['providers']['gct']) ? $v['providers']['gct'] : "N/A",
+                isset($v['providers']['oht']) ? $v['providers']['oht'] : "N/A",
+                $v['language'],
+                $v['display'],
+                !empty($v['comments']) ? $v['comments'] : "",
+            ]) . " | ";
+        }
+        return implode("\n", $mark);
     }
 }
