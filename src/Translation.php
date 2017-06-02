@@ -148,7 +148,7 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \RW\Models\Translation::idFactory($lang, $text);
+            $id = \RW\Models\Translation::idFactory($lang, $text, $textId);
             $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
             $slugTextIdMap[$id] = $textId;
             $slugTextIdMapReversed[$textId] = $id;
