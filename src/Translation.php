@@ -185,20 +185,24 @@ class Translation
             return $translatedMessages;
         }
 
-        $results = $this->db->batchGetItem([
-            'RequestItems' => [
-                $this->table => [
-                    "Keys" => $batchKeys,
-                    'ConsistentRead' => false,
-                    'ProjectionExpression' => 'id, t',
-                ]
-            ]
-        ]);
+        $batchChunks = array_chunk($batchKeys, 100);
         $resultMessages = [];
-        foreach ($results['Responses'][$this->table] as $response) {
-            $id = $response['id']['S'];
-            $text = $response['t']['S'];
-            $resultMessages[$slugTextIdMap[$id]] = $text;
+        foreach ($batchChunks as $chunk) {
+            $results = $this->db->batchGetItem([
+                'RequestItems' => [
+                    $this->table => [
+                        "Keys" => $chunk,
+                        'ConsistentRead' => false,
+                        'ProjectionExpression' => 'id, t',
+                    ]
+                ]
+            ]);
+
+            foreach ($results['Responses'][$this->table] as $response) {
+                $id = $response['id']['S'];
+                $text = $response['t']['S'];
+                $resultMessages[$slugTextIdMap[$id]] = $text;
+            }
         }
 
         $missingMessages = array_diff($messages, $resultMessages);
