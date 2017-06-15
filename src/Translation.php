@@ -9,6 +9,9 @@ use RW\Services\Languges;
 
 class Translation
 {
+    public static $userLanguage = Languges::DEFAULT_LANGUAGE_CODE;
+    public static $translator = null;
+
     /**
      * The max length you want to put for key. Note: If the key length is very small, you might run into collision.
      * If it is too big, you wasted space.
@@ -112,6 +115,44 @@ class Translation
         if ($this->live == true && $this->cache === null) {
             throw new \InvalidArgumentException("Unable to start live translation without cache support.");
         }
+    }
+
+    /**
+     * Get Static function.
+     *
+     * @return null
+     * @throws \Exception
+     */
+    public static function getInstance()
+    {
+        if (self::$translator instanceof Translation) {
+            return self::$translator;
+        }
+
+        throw new \Exception("Translation object has not be initialized.");
+    }
+
+    /**
+     * Init the translation service
+     *
+     * @param null $dynamoSettings
+     * @param array $supportLanguages
+     * @param null $cache
+     * @param null $defaultLang
+     * @param null $gct
+     * @param array $excludeFromLiveTranslation
+     *
+     * @return null|Translation
+     */
+    public static function init($dynamoSettings = null,
+                                $supportLanguages = ['en'],
+                                $cache = null,
+                                $defaultLang = null,
+                                $gct = null,
+                                $excludeFromLiveTranslation = [])
+    {
+        self::$translator = new Translation($dynamoSettings = null, $supportLanguages = ['en'], $cache = null, $defaultLang = null, $gct = null, $excludeFromLiveTranslation = []);
+        return self::$translator;
     }
 
     /**
