@@ -151,7 +151,7 @@ class Translation
                                 $gct = null,
                                 $excludeFromLiveTranslation = [])
     {
-        self::$translator = new Translation($dynamoSettings = null, $supportLanguages = ['en'], $cache = null, $defaultLang = null, $gct = null, $excludeFromLiveTranslation = []);
+        self::$translator = new Translation($dynamoSettings, $supportLanguages, $cache, $defaultLang, $gct, $excludeFromLiveTranslation);
         return self::$translator;
     }
 
