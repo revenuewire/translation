@@ -2,11 +2,7 @@
 /**
  * Class UserLanguage
  */
-
-namespace Services;
-
-
-use RW\Services\Languges;
+namespace RW\Services;
 
 class UserLanguage
 {
