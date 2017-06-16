@@ -109,11 +109,12 @@ class Translation
         }
 
         if ($this->db === null) {
-            throw new \InvalidArgumentException("Unable to start translation without db support.");
+            //effectively disabled the translation
+            $this->supportLanguages = [];
         }
 
         if ($this->live == true && $this->cache === null) {
-            throw new \InvalidArgumentException("Unable to start live translation without cache support.");
+            $this->supportLanguages = [];
         }
     }
 
