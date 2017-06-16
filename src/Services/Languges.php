@@ -293,4 +293,30 @@ class Languges
         }
         return implode("\n", $mark);
     }
+
+    /**
+     * Get Supported Languages Display
+     * @return array
+     */
+    public static function getSupportedLanguagesDisplayMap()
+    {
+        $map = [];
+        foreach (self::$supportedLanguages as $languageCode => $language) {
+            $map[$languageCode] = $language['display'];
+        }
+        return $map;
+    }
+
+    /**
+     * Get Supported Languages
+     * @return array
+     */
+    public static function getSupportedLanguagesMap()
+    {
+        $map = [];
+        foreach (self::$supportedLanguages as $languageCode => $language) {
+            $map[$languageCode] = $language['language'];
+        }
+        return $map;
+    }
 }
