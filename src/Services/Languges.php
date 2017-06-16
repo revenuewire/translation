@@ -17,180 +17,215 @@ class Languges
      */
     public static $supportedLanguages = [
         "en" => [
+            "code" => "en",
             "language" => "English",
             "display" => "English",
             "providers" => ['gct' => "en", 'oht' => "en-us"]
         ],
         "af" => [
+            "code" => "af",
             "language" => "Afrikaans",
             "display" => "Afrikaans",
             "providers" => ['gct' => "af", 'oht' => "af"],
         ],
         "ar" => [
+            "code" => "ar",
             "language" => "Arabic",
             "display" => "العربية",
             "providers" =>['gct' => "ar", 'oht' => "ar-sa"],
         ],
         "bg" => [
+            "code" => "bg",
             "language" => "Bulgarian",
             "display" => "Български",
             "providers" =>['gct' => "bg", 'oht' => "bg-bg"],
         ],
         "zh" => [
+            "code" => "zh",
             "language" => "Chinese (Simple)",
             "display" => "简体中文",
             "providers" =>['gct' => "zh", 'oht' => "zh-cn-cmn-s"],
         ],
         "zh-cn" => [
+            "code" => "zh-cn",
             "language" => "Chinese (Simple)",
             "display" => "简体中文",
             "providers" =>['gct' => "zh-cn", 'oht' => "zh-cn-cmn-s"],
             "comments" => "BCP-47",
         ],
         "zh-tw" => [
+            "code" => "zh-tw",
             "language" => "Chinese (Traditional)",
             "display" => "繁體中文",
             "providers" =>['gct' => "zh-tw", 'oht' => "zh-cn-cmn-t"],
             "comments" => "BCP-47",
         ],
         "hr" => [
+            "code" => "hr",
             "language" => "Croatian",
             "display" => "hrvatski",
             "providers" =>['gct' => "hr", 'oht' => "hr-hr"],
         ],
         "cs" => [
+            "code" => "cs",
             "language" => "Czech",
             "display" => "český",
             "providers" =>['gct' => "cs", 'oht' => "cs-cz"],
         ],
         "da" => [
+            "code" => "da",
             "language" => "Danish",
             "display" => "dansk",
             "providers" =>['gct' => "da", 'oht' => "da-dk"],
         ],
         "nl" => [
+            "code" => "nl",
             "language" => "Dutch",
             "display" => "Nederlands",
             "providers" =>['gct' => "nl", 'oht' => "nl-nl"],
         ],
         "fr" => [
+            "code" => "fr",
             "language" => "French",
             "display" => "français",
             "providers" =>['gct' => "fr", 'oht' => "fr-fr"],
         ],
         "de" => [
+            "code" => "de",
             "language" => "German",
             "display" => "Deutsch",
             "providers" =>['gct' => "de", 'oht' => "de-de"],
         ],
         "el" => [
+            "code" => "el",
             "language" => "Greek",
             "display" => "ελληνικά",
             "providers" =>['gct' => "el", 'oht' => "el-gr"],
         ],
         "iw" => [
+            "code" => "iw",
             "language" => "Hebrew",
             "display" => "עברית",
             "providers" =>['gct' => "iw"],
         ],
         "hi" => [
+            "code" => "hi",
             "language" => "Hindi",
             "display" => "हिन्दी",
             "providers" =>['gct' => "hi", 'oht' => "hi-in"],
         ],
         "is" => [
+            "code" => "is",
             "language" => "Icelandic",
             "display" => "íslenska",
             "providers" =>['gct' => "is", 'oht' => "is-is"],
         ],
         "id" => [
+            "code" => "id",
             "language" => "Indonesian",
             "display" => "Bahasa Indonesia",
             "providers" =>['gct' => "id", 'oht' => "id-id"],
         ],
         "it" => [
+            "code" => "it",
             "language" => "Italian",
             "display" => "italiano",
             "providers" =>['gct' => "it", 'oht' => "it-it"],
         ],
         "ja" => [
+            "code" => "ja",
             "language" => "Japanese",
             "display" => "日本語",
             "providers" =>['gct' => "ja", 'oht' => "jp-jp"],
         ],
         "ko" => [
+            "code" => "ko",
             "language" => "Korean",
             "display" => "한국어",
             "providers" =>['gct' => "ko", 'oht' => "ko-kp"],
         ],
         "no" => [
+            "code" => "no",
             "language" => "Norwegian",
             "display" => "Norsk",
             "providers" =>['gct' => "no", 'oht' => "no-no"],
         ],
         "pl" => [
+            "code" => "pl",
             "language" => "Polish",
             "display" => "polski",
             "providers" =>['gct' => "pl", 'oht' => "pl-pl"],
         ],
         "pt" => [
+            "code" => "pt",
             "language" => "Portuguese",
             "display" => "português",
             "providers" =>['gct' => "pt", 'oht' => "pt-pt"],
         ],
         "pt-br" => [
+            "code" => "pt-br",
             "language" => "Portuguese (Brazil)",
             "display" => "português - Brasil",
             "providers" =>['oht' => "pt-br"],
             "comments" => "ISO 639.2",
         ],
         "pt-pt" => [
+            "code" => "pt-pt",
             "language" => "Portuguese (Portugal)",
             "display" => "português",
             "providers" =>['gct' => "pt", 'oht' => "pt-pt"],
             "comments" => "ISO 639.2",
         ],
         "ro" => [
+            "code" => "ro",
             "language" => "Romanian",
             "display" => "limba română ",
             "providers" =>['gct' => "ro", 'oht' => "ro-ro"],
         ],
         "ru" => [
+            "code" => "ru",
             "language" => "Russian",
             "display" => "Русский",
             "providers" =>['gct' => "ru", 'oht' => "ru-ru"],
         ],
         "sk" => [
+            "code" => "sk",
             "language" => "Slovak",
             "display" => "slovenčina",
             "providers" =>['gct' => "sk", 'oht' => "sk-sk"],
         ],
         "es" => [
+            "code" => "es",
             "language" => "Spanish",
             "display" => "español",
             "providers" =>['gct' => "es", 'oht' => "es-es"],
         ],
         "sv" => [
+            "code" => "sv",
             "language" => "Swedish",
             "display" => "svenska",
             "providers" =>['gct' => "sv", 'oht' => "sv-se"],
         ],
         "th" => [
+            "code" => "th",
             "language" => "Thai",
             "display" => "ภาษาไทย",
             "providers" =>['gct' => "th", 'oht' => "th-th"],
         ],
         "tr" => [
+            "code" => "tr",
             "language" => "Turkish",
             "display" => "Türkçe",
             "providers" =>['gct' => "tr", 'oht' => "tr-tr"],
         ],
         "vi" => [
+            "code" => "vi",
             "language" => "Vietnamese",
             "display" => "Tiếng Việt",
             "providers" =>['gct' => "vi", 'oht' => "vi-vn"],
         ],
         "fi" => [
+            "code" => "fi",
             "language" => "Finnish",
             "display" => "suomi",
             "providers" =>['oht' => "fi-fi"],
@@ -292,33 +327,5 @@ class Languges
             ]) . " | ";
         }
         return implode("\n", $mark);
-    }
-
-    /**
-     * Get Supported Languages Display
-     * @return array
-     */
-    public static function getSupportedLanguagesDisplayMap()
-    {
-        $map = [];
-        foreach (self::$supportedLanguages as $languageCode => $language) {
-            $map[$languageCode] = $language['display'];
-        }
-        ksort($map);
-        return $map;
-    }
-
-    /**
-     * Get Supported Languages
-     * @return array
-     */
-    public static function getSupportedLanguagesMap()
-    {
-        $map = [];
-        foreach (self::$supportedLanguages as $languageCode => $language) {
-            $map[$languageCode] = $language['language'];
-        }
-        ksort($map);
-        return $map;
     }
 }
