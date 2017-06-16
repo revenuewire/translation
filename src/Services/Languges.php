@@ -304,6 +304,7 @@ class Languges
         foreach (self::$supportedLanguages as $languageCode => $language) {
             $map[$languageCode] = $language['display'];
         }
+        ksort($map);
         return $map;
     }
 
@@ -317,6 +318,7 @@ class Languges
         foreach (self::$supportedLanguages as $languageCode => $language) {
             $map[$languageCode] = $language['language'];
         }
+        ksort($map);
         return $map;
     }
 }
