@@ -77,12 +77,16 @@ class GoogleCloudTranslation
      */
     public static function translate($sourceLanguage, $targetLanguage, $text)
     {
-        $translation = self::$client->translate($text, [
-            'source ' => $sourceLanguage,
-            'target' => $targetLanguage,
-            "model" => "nmt"
-        ]);
-        return $translation['text'];
+        try {
+            $translation = self::$client->translate($text, [
+                'source ' => $sourceLanguage,
+                'target' => $targetLanguage,
+                "model" => "nmt"
+            ]);
+            return $translation['text'];
+        } catch (\Exception $e) {
+            return $text;
+        }
     }
 
     /**
@@ -97,19 +101,23 @@ class GoogleCloudTranslation
     public static function batchTranslate($sourceLanguage, $targetLanguage, $texts)
     {
         $messages = [];
-        $batchChunks = array_chunk($texts, 50, true);
+        $batchChunks = array_chunk($texts, 10, true);
 
         foreach ($batchChunks as $batchChunk) {
             $keys = array_keys($batchChunk);
 
-            $translations = self::$client->translateBatch(array_values($batchChunk), [
-                'source ' => $sourceLanguage,
-                'target' => $targetLanguage,
-                "model" => "nmt"
-            ]);
-            $values = array_column($translations, "text");
+            try {
+                $translations = self::$client->translateBatch(array_values($batchChunk), [
+                    'source ' => $sourceLanguage,
+                    'target' => $targetLanguage,
+                    "model" => "nmt"
+                ]);
+                $values = array_column($translations, "text");
 
-            $messages = array_merge($messages, array_combine($keys, $values));
+                $messages = array_merge($messages, array_combine($keys, $values));
+            }catch (\Exception $e) {
+                continue;
+            }
         }
 
         return $messages;
