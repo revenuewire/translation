@@ -227,7 +227,7 @@ class Translation
             return $translatedMessages;
         }
 
-        $batchChunks = array_chunk($batchKeys, 100);
+        $batchChunks = array_chunk($batchKeys, 50);
         $resultMessages = [];
         foreach ($batchChunks as $chunk) {
             $results = $this->db->batchGetItem([

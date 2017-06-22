@@ -96,15 +96,22 @@ class GoogleCloudTranslation
      */
     public static function batchTranslate($sourceLanguage, $targetLanguage, $texts)
     {
-        $keys = array_keys($texts);
+        $messages = [];
+        $batchChunks = array_chunk($texts, 50, true);
 
-        $translations = self::$client->translateBatch(array_values($texts), [
-            'source ' => $sourceLanguage,
-            'target' => $targetLanguage,
-            "model" => "nmt"
-        ]);
-        $values = array_column($translations, "text");
+        foreach ($batchChunks as $batchChunk) {
+            $keys = array_keys($batchChunk);
 
-        return array_combine($keys, $values);
+            $translations = self::$client->translateBatch(array_values($batchChunk), [
+                'source ' => $sourceLanguage,
+                'target' => $targetLanguage,
+                "model" => "nmt"
+            ]);
+            $values = array_column($translations, "text");
+
+            $messages = array_merge($messages, array_combine($keys, $values));
+        }
+
+        return $messages;
     }
 }
