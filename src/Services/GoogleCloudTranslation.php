@@ -81,7 +81,8 @@ class GoogleCloudTranslation
             $translation = self::$client->translate($text, [
                 'source ' => $sourceLanguage,
                 'target' => $targetLanguage,
-                "model" => "nmt"
+                "model" => "nmt",
+                'format' => 'text'
             ]);
             return $translation['text'];
         } catch (\Exception $e) {
@@ -110,7 +111,8 @@ class GoogleCloudTranslation
                 $translations = self::$client->translateBatch(array_values($batchChunk), [
                     'source ' => $sourceLanguage,
                     'target' => $targetLanguage,
-                    "model" => "nmt"
+                    "model" => "nmt",
+                    'format' => 'text'
                 ]);
                 $values = array_column($translations, "text");
 
