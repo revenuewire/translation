@@ -1,12 +1,12 @@
 <?php
 /**
- * Class Languges
+ * Class Languages
  */
 
 namespace RW\Services;
 
 
-class Languges
+class Languages
 {
     const DEFAULT_LANGUAGE_CODE = "en";
 

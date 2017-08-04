@@ -5,11 +5,11 @@ use Aws\DynamoDb\DynamoDbClient;
 use Aws\DynamoDb\Marshaler;
 use Predis\Client;
 use RW\Services\GoogleCloudTranslation;
-use RW\Services\Languges;
+use RW\Services\Languages;
 
 class Translation
 {
-    public static $userLanguage = Languges::DEFAULT_LANGUAGE_CODE;
+    public static $userLanguage = Languages::DEFAULT_LANGUAGE_CODE;
     public static $translator = null;
 
     /**
@@ -26,7 +26,7 @@ class Translation
     /** @var $cache Client  */
     public $cache = null;
     public $cachePrefix = null;
-    public $defaultLang = Languges::DEFAULT_LANGUAGE_CODE;
+    public $defaultLang = Languages::DEFAULT_LANGUAGE_CODE;
 
     public $live = false;
     public $excludeFromLiveTranslation = [];
@@ -54,8 +54,8 @@ class Translation
 
         //check if we can support the given languages
         foreach ($supportLanguages as $language) {
-            if (Languges::transformLanguageCodeToGTC($language) === false
-                    && Languges::transformLanguageCodeToOTH($language) === false) {
+            if (Languages::transformLanguageCodeToGTC($language) === false
+                    && Languages::transformLanguageCodeToOTH($language) === false) {
                 throw new \InvalidArgumentException("Unable to support the language translation [$language].");
             }
         }
@@ -102,7 +102,7 @@ class Translation
             $languages = array_diff($supportLanguages, $excludeFromLiveTranslation);
             //check if we can support the given languages
             foreach ($languages as $language) {
-                if (Languges::transformLanguageCodeToGTC($language) === false){
+                if (Languages::transformLanguageCodeToGTC($language) === false){
                     throw new \InvalidArgumentException("Unable to support the language translation in live mode. [$language].");
                 }
             }
@@ -177,7 +177,7 @@ class Translation
         /**
          * If language is not in supported languages, just return original text back
          */
-        $lang = Languges::transformLanguageCode($lang);
+        $lang = Languages::transformLanguageCode($lang);
         if (!in_array($lang, $this->supportLanguages)) {
             return $messages;
         }
@@ -219,8 +219,8 @@ class Translation
             if ($lang == $this->defaultLang) {
                 return $messages;
             }
-            $sourceLang = Languges::transformLanguageCodeToGTC($this->defaultLang);
-            $targetLang = Languges::transformLanguageCodeToGTC($lang);
+            $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
+            $targetLang = Languages::transformLanguageCodeToGTC($lang);
             $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $messages);
 
             $this->setCacheBatch($translatedMessages, $slugTextIdMapReversed);
@@ -303,7 +303,7 @@ class Translation
         /**
          * If language is not in supported languages, just return original text back
          */
-        $lang = Languges::transformLanguageCode($lang);
+        $lang = Languages::transformLanguageCode($lang);
         if (!in_array($lang, $this->supportLanguages)) {
             return $text;
         }
@@ -323,8 +323,8 @@ class Translation
             if ($lang == $this->defaultLang) {
                 return $text;
             }
-            $sourceLang = Languges::transformLanguageCodeToGTC($this->defaultLang);
-            $targetLang = Languges::transformLanguageCodeToGTC($lang);
+            $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
+            $targetLang = Languages::transformLanguageCodeToGTC($lang);
             $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
             $this->setCache($id, $translatedText);
 

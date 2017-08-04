@@ -1,7 +1,7 @@
 <?php
 namespace RW\Models;
 use Aws\DynamoDb\DynamoDbClient;
-use RW\Services\Languges;
+use RW\Services\Languages;
 use RW\Utils;
 
 /**
@@ -108,7 +108,7 @@ class Translation extends Model
      *
      * @return array
      */
-    public static function getAllTextsByLanguage($lang = Languges::DEFAULT_LANGUAGE_CODE, $limit = null)
+    public static function getAllTextsByLanguage($lang = Languages::DEFAULT_LANGUAGE_CODE, $limit = null)
     {
         $lastEvaluatedKey = null;
         $items = [];

@@ -53,7 +53,7 @@ class UserLanguage
             return self::$lang;
         }
 
-        self::$lang = Languges::getBrowserLanguage();
+        self::$lang = Languages::getBrowserLanguage();
         return self::$lang;
     }
 }
