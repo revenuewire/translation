@@ -170,7 +170,7 @@ class Translation
             $lang = $this->defaultLang;
         }
 
-        if (empty($messages)) {
+        if (empty($messages) ||  $lang == $this->defaultLang) {
             return $messages;
         }
 
@@ -293,10 +293,10 @@ class Translation
         }
 
         /**
-         * If the text is empty, return it with empty string.
+         * If the text is empty, or if language is English return it with empty string.
          */
         $text = trim($text);
-        if (empty($text)) {
+        if (empty($text)  ||  $lang == $this->defaultLang) {
             return $text;
         }
 
