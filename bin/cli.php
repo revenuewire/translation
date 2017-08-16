@@ -76,8 +76,8 @@ $oht = [
 ];
 
 $gct = [
-  "key" => !empty($options['gct_key']) ? $options['gct_key'] : "",
-  "project" => !empty($options['gct_project']) ? $options['gct_project'] : "",
+    "key" => !empty($options['gct_key']) ? $options['gct_key'] : "",
+    "project" => !empty($options['gct_project']) ? $options['gct_project'] : "",
 ];
 
 $numOfOptions = count($options);
@@ -409,6 +409,7 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
     }
 
     file_put_contents("/tmp/{$projectId}.xml", $dom->saveXML());
+    chmod("/tmp/{$projectId}.xml", 0777);
     $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
     $resourceId = $oneHourTranslation->uploadResourceFile("/tmp/{$projectId}.xml");
 
