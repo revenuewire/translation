@@ -153,29 +153,10 @@ class OneHourTranslation
      */
     function uploadResourceFile($filePath)
     {
-        $curl = curl_init();
-
-        $data = [
-            "public_key" => $this->oht->getPublicKey(),
-            "secret_key" => $this->oht->getSecretKey(),
-            "upload" => "@" . $filePath,
-        ];
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->oht->getBaseURL() . "/resources/file",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => 1,
-            CURLOPT_SAFE_UPLOAD => false,
-            CURLOPT_POSTFIELDS => $data,
-            CURLOPT_HTTPHEADER => array(
-                "cache-control: no-cache",
-                "content-type: multipart/form-data;",
-            ),
-        ));
-
-        $response = curl_exec($curl);
-
+        $cmd = "curl -s -F secret_key={$this->oht->getSecretKey()} -F public_key={$this->oht->getPublicKey()} -F upload=@{$filePath} {$this->oht->getBaseURL()}/resources/file";
+        $response = shell_exec($cmd);
         $result = json_decode($response);
+
         if (!empty($result->status->msg) && $result->status->msg == 'ok') {
             return $result->results[0];
         }
@@ -201,7 +182,7 @@ class OneHourTranslation
             CURLOPT_URL => $this->oht->getBaseURL() . "/project/$projectId/tag",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => 1,
-            CURLOPT_SAFE_UPLOAD => false,
+            CURLOPT_SAFE_UPLOAD => true,
             CURLOPT_POSTFIELDS => $data,
         ));
 
