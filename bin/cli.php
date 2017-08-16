@@ -407,7 +407,7 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
         $displayText = substr($text, 0, 10) . "...";
         echo "  ===> Translate: sourceID: [$sourceId]. Text: [$displayText]\n";
     }
-
+    $dom->formatOutput = true;
     file_put_contents("/tmp/{$projectId}.xml", $dom->saveXML());
     chmod("/tmp/{$projectId}.xml", 0777);
     $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
