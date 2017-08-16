@@ -70,7 +70,7 @@ $oht = [
     "pubkey" => !empty($options['oth_pubkey']) ? $options['oth_pubkey'] : "",
     "secret" => !empty($options['oth_secret']) ? $options['oth_secret'] : "",
     "sandbox" => !empty($options['oth_sandbox']) ? filter_var($options['oth_sandbox'], FILTER_VALIDATE_BOOLEAN) : false,
-    "note" => !empty($options['oth_note']) ? $options['oth_note'] : "DO NOT TRANSLATE any texts enclosed with 'curly brackets {}', '%s' notations and xml/html attributes.",
+    "note" => !empty($options['oth_note']) ? $options['oth_note'] : "PLEASE DO NOT TRANSLATE any texts enclosed with 'curly brackets {}', '%s' notations and xml/html attributes. Always use formal language if applicable.",
     "expertise" => !empty($options['oth_expertise']) ? $options['oth_expertise'] : "",
     "tag" => !empty($options['oth_tag']) ? $options['oth_tag'] : "",
 ];
