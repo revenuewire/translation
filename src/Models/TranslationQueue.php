@@ -173,7 +173,7 @@ class TranslationQueue extends Model
             ),
             'KeyConditionExpression' => '#projectId = :projectId'
         );
-       
+
         $items = [];
         $result = self::$client->query($queryAttributes);
         foreach ($result->get('Items') as $item) {
@@ -250,7 +250,7 @@ class TranslationQueue extends Model
      */
     public function setTargetId($targetId)
     {
-        if ($this->data["targetId"] != $targetId) {
+        if (empty($this->data["targetId"]) || $this->data["targetId"] != $targetId) {
             $this->data["targetId"] = $targetId;
             $this->modifiedColumns["targetId"] = true;
         }
@@ -272,7 +272,7 @@ class TranslationQueue extends Model
      */
     public function setTargetResult($targetResult)
     {
-        if ($this->data["targetResult"] != $targetResult) {
+        if (empty($this->data["targetResult"]) || $this->data["targetResult"] != $targetResult) {
             $this->data["targetResult"] = $targetResult;
             $this->modifiedColumns["targetResult"] = true;
         }
@@ -294,7 +294,7 @@ class TranslationQueue extends Model
      */
     public function setProjectId($projectId)
     {
-        if ($this->data["projectId"] != $projectId) {
+        if (empty($this->data["projectId"]) || $this->data["projectId"] != $projectId) {
             $this->data["projectId"] = $projectId;
             $this->modifiedColumns["projectId"] = true;
         }
@@ -316,7 +316,7 @@ class TranslationQueue extends Model
      */
     public function setStatus($status)
     {
-        if ($this->data["status"] != $status) {
+        if (empty($this->data["status"]) || $this->data["status"] != $status) {
             $this->data["status"] = $status;
             $this->modifiedColumns["status"] = true;
         }
@@ -338,7 +338,7 @@ class TranslationQueue extends Model
      */
     public function setCreated($created)
     {
-        if ($this->data["created"] != $created) {
+        if (empty($this->data["created"]) || $this->data["created"] != $created) {
             $this->data["created"] = $created;
             $this->modifiedColumns["created"] = true;
         }
@@ -360,7 +360,7 @@ class TranslationQueue extends Model
      */
     public function setModified($modified)
     {
-        if ($this->data["modified"] != $modified) {
+        if (empty($this->data["modified"]) || $this->data["modified"] != $modified) {
             $this->data["modified"] = $modified;
             $this->modifiedColumns["modified"] = true;
         }
@@ -382,7 +382,7 @@ class TranslationQueue extends Model
      */
     public function setNamespace($namespace)
     {
-        if ($this->data["namespace"] != $namespace) {
+        if (empty($this->data["namespace"]) || $this->data["namespace"] != $namespace) {
             $this->data["namespace"] = $namespace;
             $this->modifiedColumns["namespace"] = true;
         }

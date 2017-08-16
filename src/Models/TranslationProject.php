@@ -192,7 +192,7 @@ class TranslationProject extends Model
      */
     public function setId($id)
     {
-        if ($this->data["id"] != $id) {
+        if (empty($this->data["id"]) || $this->data["id"] != $id) {
             $this->data["id"] = $id;
             $this->modifiedColumns["id"] = true;
         }
@@ -214,7 +214,7 @@ class TranslationProject extends Model
      */
     public function setTargetLanguage($targetLanguage)
     {
-        if ($this->data["targetLanguage"] != $targetLanguage) {
+        if (empty($this->data["targetLanguage"]) || $this->data["targetLanguage"] != $targetLanguage) {
             $this->data["targetLanguage"] = $targetLanguage;
             $this->modifiedColumns["targetLanguage"] = true;
         }
@@ -236,7 +236,7 @@ class TranslationProject extends Model
      */
     public function setCreated($created)
     {
-        if ($this->data["created"] != $created) {
+        if (empty($this->data["created"]) || $this->data["created"] != $created) {
             $this->data["created"] = $created;
             $this->modifiedColumns["created"] = true;
         }
@@ -258,7 +258,7 @@ class TranslationProject extends Model
      */
     public function setModified($modified)
     {
-        if ($this->data["modified"] != $modified) {
+        if (empty($this->data["modified"]) || $this->data["modified"] != $modified) {
             $this->data["modified"] = $modified;
             $this->modifiedColumns["modified"] = true;
         }
@@ -280,7 +280,7 @@ class TranslationProject extends Model
      */
     public function setStatus($status)
     {
-        if ($this->data["status"] != $status) {
+        if (empty($this->data["status"]) || $this->data["status"] != $status) {
             $this->data["status"] = $status;
             $this->modifiedColumns["status"] = true;
         }
@@ -302,7 +302,7 @@ class TranslationProject extends Model
      */
     public function setProjectData($projectData)
     {
-        if ($this->data["projectData"] != $projectData) {
+        if (empty($this->data["projectData"]) || $this->data["projectData"] != $projectData) {
             $this->data["projectData"] = $projectData;
             $this->modifiedColumns["projectData"] = true;
         }
@@ -324,7 +324,7 @@ class TranslationProject extends Model
      */
     public function setProvider($provider)
     {
-        if ($this->data["provider"] != $provider) {
+        if (empty($this->data["provider"]) || $this->data["provider"] != $provider) {
             $this->data["provider"] = $provider;
             $this->modifiedColumns["provider"] = true;
         }
