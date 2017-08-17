@@ -177,7 +177,22 @@ switch ($action) {
 
                 $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
                 $result = $oneHourTranslation->getProjectStatus($projectData['project_id']);
-                echo "Project: [{$projectId}]. OHT Status: [{$result->results->project_status}]\n";
+
+                $status = "unknown";
+                if (!empty($result->results->project_status_code)){
+                    switch ($result->results->project_status_code) {
+                        case "in_progress":
+                            $status = "Translating in progress";
+                            break;
+                        case "signed":
+                            $status = "Translation ready to commit";
+                            break;
+                        case "pending":
+                            $status = "Waiting for a translator";
+                            break;
+                    }
+                }
+                echo "Project: [{$projectId}]. OHT Status: [{$status}]\n";
             }
         }
         break;
@@ -234,12 +249,16 @@ switch ($action) {
                         echo "  ===> Queue ID [$queueId] processed.\n";
                     }
                 }
-            }
-            $project->setStatus(RW\Models\TranslationProject::STATUS_COMPLETED);
-            $project->setModified(time());
-            $project->save();
 
-            echo "\n Remember, you need to run [php cli.php push] to add translated texts to translation table.\n";
+                $project->setStatus(RW\Models\TranslationProject::STATUS_COMPLETED);
+                $project->setModified(time());
+                $project->save();
+
+                echo "\n Remember, you need to run [php cli.php push] to add translated texts to translation table.\n";
+            } else {
+                echo "Unable to commit unsigned project. Project: [{$projectId}]\n";
+                continue;
+            }
         }
         break;
     case "push":
