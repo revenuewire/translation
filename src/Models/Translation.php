@@ -156,7 +156,7 @@ class Translation extends Model
      */
     public function setId($id)
     {
-        if ($this->data["id"] != $id) {
+        if (empty($this->data["id"]) || $this->data["id"] != $id) {
             $this->data["id"] = $id;
             $this->modifiedColumns["id"] = true;
         }
@@ -178,7 +178,7 @@ class Translation extends Model
      */
     public function setText($t)
     {
-        if ($this->data["t"] != $t) {
+        if (empty($this->data["t"]) || $this->data["t"] != $t) {
             $this->data["t"] = $t;
             $this->modifiedColumns["t"] = true;
         }
@@ -200,7 +200,7 @@ class Translation extends Model
      */
     public function setLang($l)
     {
-        if ($this->data["l"] != $l) {
+        if (empty($this->data["l"]) || $this->data["l"] != $l) {
             $this->data["l"] = $l;
             $this->modifiedColumns["l"] = true;
         }
