@@ -190,7 +190,7 @@ class OneHourTranslation
 
         $result = json_decode($response);
         if (!empty($result->status->msg) && $result->status->msg == 'ok') {
-            return $result->results[0];
+            return true;
         }
         throw new \InvalidArgumentException("Unable to upload resource to OHT. Reason: " . var_export($result, true));
     }
