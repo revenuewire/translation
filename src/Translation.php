@@ -190,9 +190,11 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \RW\Models\Translation::idFactory($lang, $text, $textId);
-            $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
-            $slugTextIdMap[$id] = $textId;
+            $id = \RW\Models\Translation::idFactory($lang, $text);
+            if (empty($slugTextIdMap[$id])) {
+                $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
+                $slugTextIdMap[$id] = $textId;
+            }
             $slugTextIdMapReversed[$textId] = $id;
         }
 
@@ -252,9 +254,10 @@ class Translation
         if ($lang == $this->defaultLang) {
             $batchData = [];
             foreach ($missingMessages as $k => $v) {
-                $batchData[] = ['PutRequest' => [
+                $id = $slugTextIdMapReversed[$k];
+                $batchData[$id] = ['PutRequest' => [
                     "Item" => $this->marshaler->marshalItem([
-                        'id' => $slugTextIdMapReversed[$k],
+                        'id' => $id,
                         't' => $v,
                         'l' => $lang,
                     ])
