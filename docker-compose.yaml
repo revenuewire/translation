@@ -1,0 +1,12 @@
+version: '2'
+services:
+  test:
+      image: revenuewire/docker-php7-xenial:latest
+      volumes:
+          - $PWD:/var/www/html
+      links:
+          - redis
+      command: ./vendor/bin/phpunit
+      working_dir: /var/www/html
+  redis:
+      image: redis:latest

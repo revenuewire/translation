@@ -31,26 +31,32 @@ class Translation
     public $live = false;
     public $excludeFromLiveTranslation = [];
 
+    public $namespace = "";
+
     /**
      * Translation constructor.
      *
-     * @param $dynamoSettings
+     * @param null $dynamoSettings
      * @param array $supportLanguages
      * @param null $cache
      * @param null $defaultLang
      * @param null $gct
-     * @param array|null $excludeFromLiveTranslation a list of language you do not want GCT neural translation (live translation)
+     * @param array $excludeFromLiveTranslation
+     * @param string $namespace
      */
     function __construct($dynamoSettings = null,
                          $supportLanguages = ['en'],
                          $cache = null,
                          $defaultLang = null,
                          $gct = null,
-                         $excludeFromLiveTranslation = [])
+                         $excludeFromLiveTranslation = [], $namespace = "")
     {
         if (!empty($defaultLang)) {
             $this->defaultLang = $defaultLang;
         }
+
+        //add namespace
+        $this->namespace = $namespace;
 
         //check if we can support the given languages
         foreach ($supportLanguages as $language) {
@@ -143,7 +149,7 @@ class Translation
      * @param null $defaultLang
      * @param null $gct
      * @param array $excludeFromLiveTranslation
-     *
+     * @param string $namespace
      * @return null|Translation
      */
     public static function init($dynamoSettings = null,
@@ -151,9 +157,10 @@ class Translation
                                 $cache = null,
                                 $defaultLang = null,
                                 $gct = null,
-                                $excludeFromLiveTranslation = [])
+                                $excludeFromLiveTranslation = [],
+                                $namespace = "")
     {
-        self::$translator = new Translation($dynamoSettings, $supportLanguages, $cache, $defaultLang, $gct, $excludeFromLiveTranslation);
+        self::$translator = new Translation($dynamoSettings, $supportLanguages, $cache, $defaultLang, $gct, $excludeFromLiveTranslation, $namespace);
         return self::$translator;
     }
 
@@ -191,7 +198,7 @@ class Translation
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \RW\Models\Translation::idFactory($lang, $text);
+            $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
             if (empty($slugTextIdMap[$id])) {
                 $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
                 $slugTextIdMap[$id] = $textId;
@@ -256,12 +263,16 @@ class Translation
             $batchData = [];
             foreach ($missingMessages as $k => $v) {
                 $id = $slugTextIdMapReversed[$k];
+                $item = [
+                    'id' => $id,
+                    't' => $v,
+                    'l' => $lang,
+                ];
+                if (!empty($this->namespace)) {
+                    $item['n'] = $this->namespace;
+                }
                 $batchData[$id] = ['PutRequest' => [
-                    "Item" => $this->marshaler->marshalItem([
-                        'id' => $id,
-                        't' => $v,
-                        'l' => $lang,
-                    ])
+                    "Item" => $this->marshaler->marshalItem($item)
                 ]];
             }
             if (count($batchData) > 0) {
@@ -315,7 +326,7 @@ class Translation
         /**
          * Always check cache first
          */
-        $id = \RW\Models\Translation::idFactory($lang, $text);
+        $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
         if ($this->hasCache($id)) {
             return $this->getCache($id);
         }
@@ -354,8 +365,11 @@ class Translation
                 $data = [
                     'id' => $id,
                     't' => $text,
-                    'l' => $lang
+                    'l' => $lang,
                 ];
+                if (!empty($this->namespace)) {
+                    $data['n'] = $this->namespace;
+                }
                 $this->db->putItem(array(
                     'TableName' => $this->table,
                     'Item' => $this->marshaler->marshalItem($data),

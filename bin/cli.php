@@ -330,7 +330,7 @@ function diff($defaultLanguage, $targetLanguage, $targetProvider, $limit)
             $translationQueueItem->setCreated(time());
             $translationQueueItem->setModified(time());
             $translationQueueItem->setProjectId($projectId);
-            $translationQueueItem->setTargetId(\RW\Models\Translation::idFactory($targetLanguage, $translationItemObj->getText()));
+            $translationQueueItem->setTargetId(\RW\Models\Translation::idFactory($targetLanguage, $translationItemObj->getText(), $translationItemObj->getNamespace()));
             $translationQueueItem->save();
 
             $projectItemCount++;
