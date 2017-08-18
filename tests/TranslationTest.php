@@ -12,6 +12,9 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     public static $cache;
     public static $dynamoDB;
 
+    /** @var $cacheClient \Predis\Client */
+    public static $cacheClient;
+
     /**
      * Set up
      */
@@ -28,6 +31,26 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             'timeout'  => '0.5',
             'port'     => '6379',
         ];
+
+        self::$dynamoDB = [
+            "region" => "us-west-1",
+            "version" => "2012-08-10",
+            "table" => "translation_test",
+        ];
+
+        $options = ['cluster' => 'redis'];
+        /** @var $cacheClient \Predis\Client */
+        self::$cacheClient = new \Predis\Client(array(
+            'scheme'   => 'tcp',
+            'host'     => self::$cache['host'],
+            'timeout'  => self::$cache['timeout'],
+            'port'     => self::$cache['port'],
+        ), $options);
+    }
+
+    public static function tearDownAfterClass()
+    {
+        self::$cacheClient->flushall();
     }
 
     /**
@@ -41,6 +64,7 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
 
         $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude);
         $this->assertSame("你好", $translator->translate('hello', "zh"));
+        self::$cacheClient->flushall();
     }
 
     /**
@@ -61,6 +85,7 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
+        self::$cacheClient->flushall();
     }
 
     /**
@@ -81,5 +106,6 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
+        self::$cacheClient->flushall();
     }
 }
