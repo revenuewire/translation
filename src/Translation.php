@@ -42,11 +42,11 @@ class Translation
      * @param array|null $excludeFromLiveTranslation a list of language you do not want GCT neural translation (live translation)
      */
     function __construct($dynamoSettings = null,
-                            $supportLanguages = ['en'],
-                            $cache = null,
-                            $defaultLang = null,
-                            $gct = null,
-                            $excludeFromLiveTranslation = [])
+                         $supportLanguages = ['en'],
+                         $cache = null,
+                         $defaultLang = null,
+                         $gct = null,
+                         $excludeFromLiveTranslation = [])
     {
         if (!empty($defaultLang)) {
             $this->defaultLang = $defaultLang;
@@ -55,7 +55,7 @@ class Translation
         //check if we can support the given languages
         foreach ($supportLanguages as $language) {
             if (Languages::transformLanguageCodeToGTC($language) === false
-                    && Languages::transformLanguageCodeToOTH($language) === false) {
+                && Languages::transformLanguageCodeToOTH($language) === false) {
                 throw new \InvalidArgumentException("Unable to support the language translation [$language].");
             }
         }
@@ -74,13 +74,14 @@ class Translation
          * Using DynamoDB as storage of the translation
          */
         if (!empty($dynamoSettings) && !empty($dynamoSettings['region'])
-                && !empty($dynamoSettings['version']) && !empty($dynamoSettings['table'])) {
+            && !empty($dynamoSettings['version']) && !empty($dynamoSettings['table'])) {
             /** @var $db DynamoDbClient */
             $this->db = new DynamoDbClient($dynamoSettings);
             $this->table = $dynamoSettings['table'];
-            /** @var marshaler Marshaler */
-            $this->marshaler = new Marshaler();
         }
+
+        /** @var marshaler Marshaler */
+        $this->marshaler = new Marshaler();
 
         /**
          * Using Cache as storage of the translation
@@ -108,7 +109,7 @@ class Translation
             }
         }
 
-        if ($this->db === null) {
+        if ($this->db === null && !empty($excludeFromLiveTranslation)) {
             //effectively disabled the translation
             $this->supportLanguages = [];
         }
