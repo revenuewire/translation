@@ -28,13 +28,6 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             'timeout'  => '0.5',
             'port'     => '6379',
         ];
-
-        self::$dynamoDB = [
-            'endpoint' => 'http://dynamo:8000',
-            "region" => "us-west-1",
-            "table" => "translation",
-            "version" => "2012-08-10",
-        ];
     }
 
     /**
@@ -53,7 +46,7 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     /**
      * Test Batch
      */
-    public function testLiveBetachTranslateWithoutNamespace()
+    public function testLiveBatchTranslateWithoutNamespace()
     {
         $supportLangugaes = ["en", "zh"];
         $defaultLang = "en";
@@ -65,6 +58,26 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
         ];
 
         $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude);
+        $translatedTexts = $translator->batchTranslate($texts, "zh");
+
+        $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
+    }
+
+    /**
+     * Test Batch
+     */
+    public function testLiveBatchTranslateWithNamespace()
+    {
+        $supportLangugaes = ["en", "zh"];
+        $defaultLang = "en";
+        $exclude = [];
+
+        $texts = [
+            'hello' => "Hello",
+            "world" => "World",
+        ];
+
+        $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude, "unittest1");
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);

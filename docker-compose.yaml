@@ -6,12 +6,7 @@ services:
           - $PWD:/var/www/html
       links:
           - redis
-          - dynamo
       command: ./vendor/bin/phpunit
       working_dir: /var/www/html
   redis:
       image: redis:latest
-
-  dynamo:
-    image: dwmkerr/dynamodb
-    command: -sharedDb -dbPath /data
