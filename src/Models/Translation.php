@@ -100,9 +100,9 @@ class Translation extends Model
     {
         $text = trim($text);
         $namespace = Utils::slugify($namespace);
-        $id = Utils::slugify(strlen($text) > self::MAX_KEY_LENGTH
-            ? substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
-            : $text);
+        $id = strlen($text) > self::MAX_KEY_LENGTH ?
+                substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
+            : $text;
 
         return hash('ripemd160', implode('|:|', array($lang, $id, $namespace)));
     }
