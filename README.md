@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/revenuewire/translation.svg?branch=master)](https://travis-ci.org/revenuewire/translation)
+
 ## Install
 `composer require revenuewire/translation`
 
