@@ -175,7 +175,7 @@ class Translation extends Model
      */
     public function getNamespace()
     {
-        return $this->data["n"];
+        return empty($this->data["n"]) ? "" : $this->data["n"];
     }
 
     /**

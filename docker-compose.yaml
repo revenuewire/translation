@@ -3,10 +3,10 @@ services:
   test:
       image: revenuewire/docker-php7-xenial:latest
       volumes:
-          - $PWD:/var/www/html
+          - $PWD:/var/www
       links:
           - redis
       command: ./vendor/bin/phpunit
-      working_dir: /var/www/html
+      working_dir: /var/www
   redis:
       image: redis:latest
