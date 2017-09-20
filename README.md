@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/revenuewire/translation.svg?branch=master)](https://travis-ci.org/revenuewire/translation)
+[![Coverage Status](https://coveralls.io/repos/github/revenuewire/translation/badge.svg?branch=master)](https://coveralls.io/github/revenuewire/translation?branch=master)
+[![Latest Stable Version](https://poser.pugx.org/revenuewire/translation/v/stable)](https://packagist.org/packages/revenuewire/translation)
 
 ## Install
 `composer require revenuewire/translation`
