@@ -6,7 +6,9 @@ language: php
 php:
   - 7.1
 
-before_script: composer install --optimize-autoloader
+before_script:
+  - docker build -t revenuewire/translation:latest .
+  - composer install --optimize-autoloader
 script: docker-compose run test
 after_success:
   - travis_retry php vendor/bin/coveralls -v

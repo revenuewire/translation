@@ -1,7 +1,7 @@
 version: '2'
 services:
   test:
-      image: php:7-cli
+      image: revenuewire/translation:latest
       volumes:
           - $PWD:/code
       links:
