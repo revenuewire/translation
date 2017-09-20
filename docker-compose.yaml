@@ -3,11 +3,11 @@ services:
   test:
       image: revenuewire/translation:latest
       volumes:
-          - $PWD:/code
+          - $PWD:$PWD
       links:
           - redis
       command: ./vendor/bin/phpunit
-      working_dir: /code
+      working_dir: $PWD
       environment:
         - GCT_KEY=$GCT_KEY
         - GCT_PROJECT=$GCT_PROJECT
