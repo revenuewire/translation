@@ -9,7 +9,6 @@
 class TranslationTest extends \PHPUnit\Framework\TestCase
 {
     public static $gct;
-    public static $cache;
     public static $dynamoDB;
 
     /** @var $cacheClient \Predis\Client */
@@ -25,32 +24,15 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             'key' => getenv('GCT_KEY'),
         ];
 
-
-        self::$cache = [
-            'host'     => 'redis',
-            'timeout'  => '0.5',
-            'port'     => '6379',
-        ];
-
         self::$dynamoDB = [
             "region" => "us-west-1",
             "version" => "2012-08-10",
             "table" => "translation_test",
         ];
-
-        $options = ['cluster' => 'redis'];
-        /** @var $cacheClient \Predis\Client */
-        self::$cacheClient = new \Predis\Client(array(
-            'scheme'   => 'tcp',
-            'host'     => self::$cache['host'],
-            'timeout'  => self::$cache['timeout'],
-            'port'     => self::$cache['port'],
-        ), $options);
     }
 
     public static function tearDownAfterClass()
     {
-        self::$cacheClient->flushall();
     }
 
     /**
@@ -62,9 +44,8 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
         $defaultLang = "en";
         $exclude = [];
 
-        $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude);
+        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude);
         $this->assertSame("你好", $translator->translate('hello', "zh"));
-        self::$cacheClient->flushall();
     }
 
     /**
@@ -81,11 +62,10 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             "world" => "World",
         ];
 
-        $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude);
+        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude);
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
-        self::$cacheClient->flushall();
     }
 
     /**
@@ -102,10 +82,9 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             "world" => "World",
         ];
 
-        $translator = new \RW\Translation(null, $supportLangugaes, self::$cache, $defaultLang, self::$gct, $exclude, "unittest1");
+        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude, "unittest1");
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
-        self::$cacheClient->flushall();
     }
 }

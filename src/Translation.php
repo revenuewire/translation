@@ -38,7 +38,6 @@ class Translation
      *
      * @param null $dynamoSettings
      * @param array $supportLanguages
-     * @param null $cache
      * @param null $defaultLang
      * @param null $gct
      * @param array $excludeFromLiveTranslation
@@ -46,10 +45,10 @@ class Translation
      */
     function __construct($dynamoSettings = null,
                          $supportLanguages = ['en'],
-                         $cache = null,
                          $defaultLang = null,
                          $gct = null,
-                         $excludeFromLiveTranslation = [], $namespace = "")
+                         $excludeFromLiveTranslation = [],
+                         $namespace = "")
     {
         if (!empty($defaultLang)) {
             $this->defaultLang = $defaultLang;
@@ -120,7 +119,10 @@ class Translation
             $this->supportLanguages = [];
         }
 
-        if ($this->live == true && $this->cache === null) {
+        /**
+         * If live mode is true, and both db and cache are not available, then disable the translation
+         */
+        if ($this->live == true && $this->db === null) {
             $this->supportLanguages = [];
         }
     }
@@ -145,7 +147,6 @@ class Translation
      *
      * @param null $dynamoSettings
      * @param array $supportLanguages
-     * @param null $cache
      * @param null $defaultLang
      * @param null $gct
      * @param array $excludeFromLiveTranslation
@@ -154,13 +155,12 @@ class Translation
      */
     public static function init($dynamoSettings = null,
                                 $supportLanguages = ['en'],
-                                $cache = null,
                                 $defaultLang = null,
                                 $gct = null,
                                 $excludeFromLiveTranslation = [],
                                 $namespace = "")
     {
-        self::$translator = new Translation($dynamoSettings, $supportLanguages, $cache, $defaultLang, $gct, $excludeFromLiveTranslation, $namespace);
+        self::$translator = new Translation($dynamoSettings, $supportLanguages, $defaultLang, $gct, $excludeFromLiveTranslation, $namespace);
         return self::$translator;
     }
 
@@ -206,37 +206,6 @@ class Translation
             $slugTextIdMapReversed[$textId] = $id;
         }
 
-        /**
-         * If perfect cache hits, yeah~~
-         */
-        if ($this->cache !== null) {
-            $cacheKeys = array_keys($slugTextIdMap);
-            $cachedResults = $this->getCacheMulti($cacheKeys);
-            $cachedMessages = array_combine(array_values($slugTextIdMap), $cachedResults);
-
-            $cacheKeysCount = count($cacheKeys);
-            $cachedResultsCount = count(array_filter($cachedResults));
-
-            if ($cachedResultsCount > 0 && $cacheKeysCount == $cachedResultsCount) {
-                return $cachedMessages;
-            }
-        }
-
-        /**
-         * If it is live mode, translated and put it into cache
-         */
-        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
-            if ($lang == $this->defaultLang) {
-                return $messages;
-            }
-            $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
-            $targetLang = Languages::transformLanguageCodeToGTC($lang);
-            $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $messages);
-
-            $this->setCacheBatch($translatedMessages, $slugTextIdMapReversed);
-            return $translatedMessages;
-        }
-
         $batchChunks = array_chunk($batchKeys, 50);
         $resultMessages = [];
         foreach ($batchChunks as $chunk) {
@@ -258,8 +227,10 @@ class Translation
         }
 
         $missingMessages = array_diff($messages, $resultMessages);
-        $resultMessages = array_merge($messages, $resultMessages);
         if ($lang == $this->defaultLang) {
+            /**
+             * If there are missing messages, wrote down to db, and return the batch
+             */
             $batchData = [];
             foreach ($missingMessages as $k => $v) {
                 $id = $slugTextIdMapReversed[$k];
@@ -285,12 +256,51 @@ class Translation
                     ]);
                 }
             }
-            $this->setCacheBatch($resultMessages, $slugTextIdMapReversed);
-        } else {
-            $this->setCacheBatch($resultMessages, $slugTextIdMapReversed, 3600);
+
+            return $messages;
         }
 
-        return $resultMessages;
+        /**
+         * If it is live mode, translated and put it into cache
+         */
+        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
+            $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
+            $targetLang = Languages::transformLanguageCodeToGTC($lang);
+            $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $missingMessages);
+
+            $batchData = [];
+            foreach ($translatedMessages as $k => $v) {
+                $id = $slugTextIdMapReversed[$k];
+                $item = [
+                    'id' => $id,
+                    't' => $v,
+                    'l' => $lang,
+                ];
+                if (!empty($this->namespace)) {
+                    $item['n'] = $this->namespace;
+                }
+                $batchData[$id] = ['PutRequest' => [
+                    "Item" => $this->marshaler->marshalItem($item)
+                ]];
+            }
+            if (count($batchData) > 0) {
+                $batchChunks = array_chunk($batchData, 25);
+                foreach ($batchChunks as $chunk) {
+                    $this->db->batchWriteItem([
+                        'RequestItems' => [
+                            $this->table => $chunk
+                        ]
+                    ]);
+                }
+            }
+
+            return array_merge($resultMessages,$translatedMessages);
+        }
+
+        /**
+         * If we end up nowhere, just return the original batch
+         */
+        return $messages;
     }
 
     /**
@@ -327,27 +337,9 @@ class Translation
          * Always check cache first
          */
         $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
-        if ($this->hasCache($id)) {
-            return $this->getCache($id);
-        }
 
         /**
-         * If it is live mode, translated and put it into cache
-         */
-        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
-            if ($lang == $this->defaultLang) {
-                return $text;
-            }
-            $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
-            $targetLang = Languages::transformLanguageCodeToGTC($lang);
-            $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
-            $this->setCache($id, $translatedText);
-
-            return $translatedText;
-        }
-
-        /**
-         * If it is not the default language, and we missed the cache
+         * If it is not the default language
          */
         $result = $this->db->getItem(array(
             'TableName' => $this->table,
@@ -359,7 +351,7 @@ class Translation
 
         if (empty($result['Item'])) {
             /**
-             * If it is the default language and we missed the cache, this means it is the first time we had this text
+             * If it is the default language and we missed the db hit, this means it is the first time we had this text
              */
             if ($lang == $this->defaultLang) {
                 $data = [
@@ -376,48 +368,41 @@ class Translation
                     'ReturnValues' => 'ALL_OLD'
                 ));
 
-                $this->setCache($id, $text);
-
                 return $text;
             }
 
-            $this->setCache($id, $text, 3600);
+            /**
+             * If live mode is enabled, let's translate it and save it to db
+             */
+            if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
+                $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
+                $targetLang = Languages::transformLanguageCodeToGTC($lang);
+                $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
+
+                $data = [
+                    'id' => $id,
+                    't' => $translatedText,
+                    'l' => $lang,
+                ];
+                if (!empty($this->namespace)) {
+                    $data['n'] = $this->namespace;
+                }
+                $this->db->putItem(array(
+                    'TableName' => $this->table,
+                    'Item' => $this->marshaler->marshalItem($data),
+                    'ReturnValues' => 'ALL_OLD'
+                ));
+
+                return $translatedText;
+            }
+
             return $text;
         }
 
         $data = $this->marshaler->unmarshalItem($result['Item']);
-        $this->setCache($id, $data['t']);
 
         return $data['t'];
 
-    }
-
-    /**
-     * Has Cache
-     *
-     * @param $id
-     *
-     * @return bool
-     */
-    private function hasCache($id)
-    {
-        return ($this->cache !== null && $this->cache->exists($this->getCacheKey($id)));
-    }
-
-    /**
-     * Set Cache
-     *
-     * @param $id
-     * @param $text
-     */
-    private function setCache($id, $text, $expiry = null)
-    {
-        if ($this->cache !== null) {
-            $this->cache->set($this->getCacheKey($id), $text);
-            if (!empty($expiry)) {
-                $this->cache->expire($this->getCacheKey($id), $expiry);
-            }
-        }
     }
 
     /**
@@ -453,18 +438,6 @@ class Translation
     private function getCacheKey($key)
     {
         return $this->cachePrefix . ':' . $key;
-    }
-
-    /**
-     * Get Cache
-     *
-     * @param $key
-     *
-     * @return string
-     */
-    private function getCache($key)
-    {
-        return $this->cache->get($this->getCacheKey($key));
     }
 
     /**
