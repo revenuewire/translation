@@ -3,7 +3,7 @@
   "type": "library",
   "description": "RW Translation Service",
   "homepage": "https://github.com/cosmostail/translation",
-  "license": "Apache License 2.0",
+  "license": "Apache-2.0",
   "authors": [
     {
       "name": "Scott Wang",
