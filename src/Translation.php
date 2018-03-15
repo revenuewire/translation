@@ -33,6 +33,9 @@ class Translation
 
     public $namespace = "";
 
+    public $messageBlocks = [];
+    public $messageBlockCache = true;
+
     /**
      * Translation constructor.
      *
@@ -283,6 +286,7 @@ class Translation
                     "Item" => $this->marshaler->marshalItem($item)
                 ]];
             }
+
             if (count($batchData) > 0) {
                 $batchChunks = array_chunk($batchData, 25);
                 foreach ($batchChunks as $chunk) {
@@ -402,6 +406,77 @@ class Translation
         $data = $this->marshaler->unmarshalItem($result['Item']);
 
         return $data['t'];
+    }
 
+
+    /**
+     * Set message file
+     *
+     * @param $file
+     * @throws \Exception
+     */
+    public function setMessageFile($file)
+    {
+        if (!file_exists($file)){
+            throw new \Exception("Unable to locate message file.");
+        }
+
+        $cacheKey = "t_blocks_Mj69VaY9UEB";
+        if ($this->messageBlockCache === true && apcu_exists($cacheKey)) {
+            $this->messageBlocks = apcu_fetch($cacheKey);
+        } else {
+            $messageBlocks = \Symfony\Component\Yaml\Yaml::parse(file_get_contents($file));
+            foreach ($messageBlocks as $k => $blocks) {
+                $this->messageBlocks[$k] = [];
+                foreach ($blocks as $block) {
+                    $this->messageBlocks[$k][$block['key']] = $block['text'];
+                }
+            }
+            apcu_store($cacheKey, $this->messageBlocks);
+        }
+    }
+
+    /**
+     * Enable cache. (only disable it on local for testing)
+     *
+     * @param bool $enableCache
+     */
+    public function setMessageBlockCache($enableCache = true)
+    {
+        $this->messageBlockCache = $enableCache;
+    }
+
+    /**
+     * Load blocks of translation texts
+     *
+     * @param $blocks
+     * @param null $language
+     * @return array
+     * @throws \Exception
+     */
+    public function load($blocks, $language = null)
+    {
+        if (empty($this->messageBlocks)) {
+            throw new \Exception("Load method only works when init message file has been setup.");
+        }
+        $messages = [];
+        foreach ($blocks as $blockName) {
+            if (!empty($this->messageBlocks[$blockName])) {
+                $messages = array_merge($messages, $this->messageBlocks[$blockName]);
+            }
+        }
+
+        $cacheKey = "t_blocks_7Xxb9IRqOj_" . implode("-", $blocks) . "-" . $language;
+        if ($this->messageBlockCache === true
+            && !empty($language)
+            && $language !== $this->defaultLang
+            && apcu_exists($cacheKey)) {
+            $translatedMessages = apcu_fetch($cacheKey);
+        } else {
+            $translatedMessages = $this->batchTranslate($messages, $language);
+            apcu_store($cacheKey, $translatedMessages);
+        }
+
+        return $translatedMessages;
     }
 }

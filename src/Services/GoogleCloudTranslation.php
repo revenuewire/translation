@@ -78,13 +78,21 @@ class GoogleCloudTranslation
     public static function translate($sourceLanguage, $targetLanguage, $text)
     {
         try {
+            $pattern = '/{(.+)}/i';
+            $replacement = '<span class="notranslate">{${1}}</span>';
+            $text = preg_replace($pattern, $replacement, $text);
+
             $translation = self::$client->translate($text, [
                 'source ' => $sourceLanguage,
                 'target' => $targetLanguage,
                 "model" => "nmt",
-                'format' => 'text'
+                'format' => 'html'
             ]);
-            return $translation['text'];
+
+            $pattern = '/<span class="notranslate">(.+)<\/span>/i';
+            $replacement = '${1}';
+
+            return preg_replace($pattern, $replacement, $translation['text']);
         } catch (\Exception $e) {
             return $text;
         }
@@ -101,6 +109,12 @@ class GoogleCloudTranslation
      */
     public static function batchTranslate($sourceLanguage, $targetLanguage, $texts)
     {
+        array_walk($texts, function (&$item1){
+            $pattern = '/{(.+)}/i';
+            $replacement = '<span class="notranslate">{${1}}</span>';
+            $item1 = preg_replace($pattern, $replacement, $item1);
+        });
+
         $messages = [];
         $batchChunks = array_chunk($texts, 10, true);
 
@@ -112,7 +126,7 @@ class GoogleCloudTranslation
                     'source ' => $sourceLanguage,
                     'target' => $targetLanguage,
                     "model" => "nmt",
-                    'format' => 'text'
+                    'format' => 'html'
                 ]);
                 $values = array_column($translations, "text");
 
@@ -121,6 +135,12 @@ class GoogleCloudTranslation
                 continue;
             }
         }
+
+        array_walk($messages, function (&$item1){
+            $pattern = '/<span class="notranslate">(.+)<\/span>/i';
+            $replacement = '${1}';
+            $item1 = preg_replace($pattern, $replacement, $item1);
+        });
 
         return $messages;
     }
