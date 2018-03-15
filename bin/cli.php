@@ -11,10 +11,11 @@ $options = getopt('', [
     'provider::', 'limit::', 'default_language::',
     'oth_pubkey::', 'oth_secret::', 'oth_sandbox::', 'oth_note::',
     'oth_tag::', 'oth_expertise::', 'oth_callback::',
-    'gct_key::', 'gct_project::',
+    'gct_key::', 'gct_project::', 'namespace::', 'message_file::'
 ]);
 
 $defaultLanguage = empty($options['default_language']) ? "en" : $options['default_language'];
+$namespace = empty($options['namespace']) ? null : $options['namespace'];
 
 /**
  * Check configuration
@@ -84,6 +85,13 @@ $numOfOptions = count($options);
 $action = $argv[$numOfOptions+1];
 
 /**
+ * Using Live Google Cloud Translation
+ */
+if (!empty($gct) && !empty($gct['project']) && !empty($gct['key'])) {
+    \RW\Services\GoogleCloudTranslation::init($gct['project'], $gct['key']);
+}
+
+/**
  * Code started.
  */
 switch ($action) {
@@ -123,6 +131,42 @@ switch ($action) {
         }
         break;
 
+    case "sync":
+        if (empty($options['message_file'])) {
+            echo "Sync only work with message file";
+        }
+
+        if (!file_exists($options['message_file'])) {
+            echo "Message file does not exists";
+        }
+
+        if (empty($options['provider']) || ($options['provider'] != 'OHT' && $options['provider'] != 'GCT')) {
+            echo "Please specify the translation provider. We current support OHT and GCT. \n";
+            exit;
+        }
+
+        $targetProvider = $options['provider'];
+        $limit = !empty($options['limit']) && $options['limit'] > 1 ? $options['limit'] : 100;
+        $targetLanguages = array_slice($argv, count($options) + 2);
+        if (empty($targetLanguages)) {
+            echo "Please specify the target language. \n";
+            exit;
+        }
+
+        $messageBlocks = \Symfony\Component\Yaml\Yaml::parse(file_get_contents($options['message_file']));
+        $messages = [];
+        foreach ($messageBlocks as $k => $blocks) {
+            foreach ($blocks as $block) {
+                $id = \RW\Models\Translation::idFactory($defaultLanguage, $block['text'], $namespace);
+                $messages[$id] = $block['text'];
+            }
+        }
+
+        foreach ($targetLanguages as $targetLanguage) {
+            sync($namespace, $messages, $targetLanguage, $targetProvider, $limit);
+        }
+
+        break;
     case "add":
         $projectIds = array_slice($argv, count($options) + 2);
         if (empty($projectIds)) {
@@ -460,4 +504,76 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
     }
 
     echo "  ===> Project created. OHT Project ID: [{$projectData->project_id}]. Cost of the project: [{$projectData->credits}]\n";
+}
+
+/**
+ * Sync Message
+ *
+ * @param $namespace
+ * @param $messages
+ * @param $targetLanguage
+ * @param $targetProvider
+ * @param $limit
+ * @throws Exception
+ */
+function sync($namespace, $sourceMessages, $targetLanguage, $targetProvider, $limit)
+{
+    echo "Source Language: [en]. Target Language: [$targetLanguage]. Target Provider: [$targetProvider]\n";
+
+    //generate new ids
+    $messages = [];
+    foreach ($sourceMessages as $message) {
+        $id = \RW\Models\Translation::idFactory($targetLanguage, $message, $namespace);
+        $messages[$id] = $message;
+    }
+
+    $alreadyTranslatedMessageObjects = \RW\Models\Translation::getAllTextsByLanguage($targetLanguage);
+    $alreadyTranslatedMessages = [];
+    foreach ($alreadyTranslatedMessageObjects as $alreadyTranslatedMessageObject) {
+        $alreadyTranslatedMessages[$alreadyTranslatedMessageObject->getId()] = $alreadyTranslatedMessageObject->getText();
+    }
+    $missingMessages = array_diff_key($messages, $alreadyTranslatedMessages);
+
+    echo count($missingMessages) . " differences found \n";
+
+    switch ($targetProvider) {
+        case "GCT":
+            $sourceLang = \RW\Services\Languages::transformLanguageCodeToGTC("en");
+            $targetLang = \RW\Services\Languages::transformLanguageCodeToGTC($targetLanguage);
+            $translatedMessages = \RW\Services\GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $missingMessages);
+
+            $batchData = [];
+            foreach ($translatedMessages as $k => $v) {
+                $item = [
+                    'id' => $k,
+                    't' => $v,
+                    'l' => $targetLang,
+                ];
+                if (!empty($namespace)) {
+                    $item['n'] = $namespace;
+                }
+
+                $batchData[$k] = ['PutRequest' => [
+                    "Item" => \RW\Models\Translation::$marshaller->marshalItem($item)
+                ]];
+            }
+
+            if (count($batchData) > 0) {
+                $batchChunks = array_chunk($batchData, 25);
+                foreach ($batchChunks as $chunk) {
+                    \RW\Models\Translation::$client->batchWriteItem([
+                        'RequestItems' => [
+                            \RW\Models\Translation::$table => $chunk
+                        ]
+                    ]);
+                }
+            }
+
+            echo count($missingMessages) . " translated messages added to db.\n\n";
+            break;
+        case "OHT":
+            break;
+        default:
+            throw new Exception("Do not know what to do");
+    }
 }
