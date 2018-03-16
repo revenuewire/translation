@@ -571,7 +571,49 @@ function sync($namespace, $sourceMessages, $targetLanguage, $targetProvider, $li
 
             echo count($missingMessages) . " translated messages added to db.\n\n";
             break;
+        /**
+         * If it is OHT, we need to batch it and then send to OHT
+         */
         case "OHT":
+            $projectItemCount = 0;
+            $projectId = null;
+            $projectCount = 0;
+            foreach ($missingMessages as $missingMessageKey => $missingMessage) {
+                //starting a new project
+                if ($projectId === null || $projectItemCount % $limit == 0) {
+                    $projectId = RW\Models\TranslationProject::idFactory();
+                    $translationProjectObject = new RW\Models\TranslationProject();
+                    $translationProjectObject->setId($projectId);
+                    $translationProjectObject->setCreated(time());
+                    $translationProjectObject->setModified(time());
+                    $translationProjectObject->setStatus(RW\Models\TranslationProject::STATUS_PENDING);
+                    $translationProjectObject->setProvider($targetProvider);
+                    $translationProjectObject->setTargetLanguage($targetLanguage);
+                }
+
+                $translationQueueItemID = RW\Models\TranslationQueue::idFactory($missingMessageKey, $targetLanguage, $targetProvider);
+                $translationQueueItem = RW\Models\TranslationQueue::getById($translationQueueItemID);
+                if (empty($translationQueueItem)) {
+                    $translationQueueItem = new RW\Models\TranslationQueue();
+                    $translationQueueItem->setId($translationQueueItemID);
+                    $translationQueueItem->setStatus(RW\Models\TranslationQueue::STATUS_PENDING);
+                    $translationQueueItem->setCreated(time());
+                    $translationQueueItem->setModified(time());
+                    $translationQueueItem->setProjectId($projectId);
+                    $translationQueueItem->setTargetId(\RW\Models\Translation::idFactory($targetLanguage, $missingMessage, $namespace));
+                    $translationQueueItem->save();
+
+                    $projectItemCount++;
+                }
+
+                if ($projectItemCount > 0 && !empty($translationProjectObject)) {
+                    echo "  ====> Project [$projectId] created by using [$targetProvider]. Source Language: [en]. Target Language: [$targetLanguage].\n";
+                    $translationProjectObject->save();
+                    $translationProjectObject = null;
+                    $projectCount++;
+                }
+            }
+            echo "A total of [$projectItemCount] items added to the translation queue. [$projectCount] projects has been created. \n";
             break;
         default:
             throw new Exception("Do not know what to do");
