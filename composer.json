@@ -15,7 +15,7 @@
     "predis/predis": "^1.1",
     "onehourtranslation/api2": "^1.0",
     "google/cloud": "^0.28.0",
-    "symfony/yaml": "^4.0"
+    "symfony/yaml": "3.2"
   },
   "autoload": {
     "psr-4": {
