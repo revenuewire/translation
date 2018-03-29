@@ -532,7 +532,7 @@ function sync($namespace, $sourceMessages, $targetLanguage, $targetProvider, $li
                     $translationProjectObject->setTargetLanguage($targetLanguage);
                 }
 
-                //$translationQueueItemID = RW\Models\TranslationQueue::idFactory($missingMessageKey, $targetLanguage, $targetProvider);
+                /** @var $translationQueueItem RW\Models\TranslationQueue */
                 $translationQueueItem = RW\Models\TranslationQueue::getById($missingMessageKey);
                 if (empty($translationQueueItem)) {
                     $translationQueueItem = new RW\Models\TranslationQueue();
@@ -548,6 +548,23 @@ function sync($namespace, $sourceMessages, $targetLanguage, $targetProvider, $li
                     $translationQueueItem->save();
 
                     $projectItemCount++;
+                } else {
+                    /**
+                     * If the same text has been translated before, bonus, directly added to ready
+                     */
+                    if ($translationQueueItem->getStatus() === RW\Models\TranslationQueue::STATUS_READY
+                            || $translationQueueItem->getStatus() === RW\Models\TranslationQueue::STATUS_COMPLETED) {
+                        $newTranslatedItem = new \RW\Models\Translation();
+                        $newTranslatedItem->setId($translationQueueItem->getId());
+                        $newTranslatedItem->setLang($targetLanguage);
+
+                        $itemNamespace = $translationQueueItem->getNamespace();
+                        if (!empty($itemNamespace)) {
+                            $newTranslatedItem->setNamespace($itemNamespace);
+                        }
+                        $newTranslatedItem->setText($translationQueueItem->getTargetResult());
+                        $newTranslatedItem->save();
+                    }
                 }
 
                 if ($projectItemCount > 0 && !empty($translationProjectObject)) {
