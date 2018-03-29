@@ -114,23 +114,6 @@ switch ($action) {
         \RW\Models\TranslationProject::$client->createTable($schema);
         echo "done\n";
         break;
-    case "diff":
-        if (empty($options['provider']) || ($options['provider'] != 'OHT' && $options['provider'] != 'GCT')) {
-            echo "Please specify the translation provider. We current support OHT and GCT. \n";
-            exit;
-        }
-        $targetProvider = $options['provider'];
-        $limit = !empty($options['limit']) && $options['limit'] > 1 ? $options['limit'] : 100;
-        $targetLanguages = array_slice($argv, count($options) + 2);
-        if (empty($targetLanguages)) {
-            echo "Please specify the target language. \n";
-            exit;
-        }
-        foreach ($targetLanguages as $targetLanguage) {
-            diff($defaultLanguage, $targetLanguage, $targetProvider, $limit);
-        }
-        break;
-
     case "sync":
         if (empty($options['message_file'])) {
             echo "Sync only work with message file";
@@ -187,9 +170,6 @@ switch ($action) {
                 case RW\Models\TranslationProject::PROVIDER_ONE_HOUR_TRANSLATION:
                     handleOHTProject($defaultLanguage, $translationProjectItem, $oht);
                     break;
-                case RW\Models\TranslationProject::PROVIDER_GOOGLE_CLOUD_TRANSLATION:
-                    handleGCTProject($defaultLanguage, $translationProjectItem, $gct);
-                    break;
                 default:
                     echo "Unknown service provider\n";
                     continue;
@@ -212,7 +192,7 @@ switch ($action) {
             $status = $project->getStatus();
 
             if ($status == RW\Models\TranslationProject::STATUS_PENDING) {
-                echo "Project: [{$projectId}] is [{$status}]. Please run command [commit] to submit to service provider.\n";
+                echo "Project: [{$projectId}] is [{$status}]. Please run command [add] and [commit] to submit to service provider.\n";
             } else {
                 if (empty($oht['pubkey']) || empty($oht['secret'])) {
                     throw new InvalidArgumentException("Unable to continue OTH project without keys.");
@@ -310,14 +290,16 @@ switch ($action) {
 
         /** @var $queueItem RW\Models\TranslationQueue*/
         foreach ($queueItems as $queueItem) {
-            list($sourceId, $targetLanguage, $__p) = RW\Models\TranslationQueue::idExplode($queueItem->getId());
-            $targetItemId = $queueItem->getTargetId();
-            $targetTranslationItem = \RW\Models\Translation::getById($targetItemId);
+            $targetTranslationItem = \RW\Models\Translation::getById($queueItem->getId());
 
             if ($targetTranslationItem == null) {
                 $targetTranslationItem = new RW\Models\Translation();
-                $targetTranslationItem->setId($targetItemId);
+                $targetTranslationItem->setId($queueItem->getId());
                 $targetTranslationItem->setLang($targetLanguage);
+            }
+            $itemNamespace = $queueItem->getNamespace();
+            if (!empty($itemNamespace)) {
+                $targetTranslationItem->setNamespace($queueItem->getNamespace());
             }
             $targetTranslationItem->setText($queueItem->getTargetResult());
             $targetTranslationItem->save();
@@ -392,45 +374,6 @@ function diff($defaultLanguage, $targetLanguage, $targetProvider, $limit)
 }
 
 /**
- * Handle GCT
- *
- * @param $translationProjectItem \RW\Models\TranslationProject
- * @param $gct
- */
-function handleGCTProject($defaultLanguage, $translationProjectItem, $gct)
-{
-    if (empty($gct['project']) || empty($gct['key'])) {
-        throw new InvalidArgumentException("Unable to continue GCT project without project and key.");
-    }
-
-    $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
-
-    $projectId = $translationProjectItem->getId();
-
-    $targetLang = \RW\Services\Languages::transformLanguageCodeToGTC($translationProjectItem->getTargetLanguage());
-    $sourceLang = \RW\Services\Languages::transformLanguageCodeToGTC($defaultLanguage);
-
-    RW\Services\GoogleCloudTranslation::init($gct['project'], $gct['key']);
-
-    echo "Starting GCT translation project id: [$projectId]. Source Lang: [$sourceLang]. Target Lang: [$targetLang] \n";
-    /** @var $queuedItem \RW\Models\TranslationQueue */
-    foreach ($queuedItems as $queuedItem) {
-        list($sourceId, $__t, $__p) = RW\Models\TranslationQueue::idExplode($queuedItem->getId());
-        /** @var $translationItem RW\Models\Translation */
-        $translationItem = RW\Models\Translation::getById($sourceId);
-        $text = $translationItem->getText();
-
-        $queuedItem->setTargetResult(\RW\Services\GoogleCloudTranslation::translate($sourceLang, $targetLang, $text));
-        $queuedItem->setStatus(RW\Models\TranslationQueue::STATUS_READY);
-        $queuedItem->setModified(time());
-        $queuedItem->save();
-    }
-    $translationProjectItem->setModified(time());
-    $translationProjectItem->setStatus(\RW\Models\TranslationProject::STATUS_COMPLETED);
-    $translationProjectItem->save();
-}
-
-/**
  * Handle OHT
  * @param $translationProjectItem RW\Models\TranslationProject
  */
@@ -440,6 +383,7 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
         throw new InvalidArgumentException("Unable to continue OTH project without keys.");
     }
 
+    /** @var $queuedItems \RW\Models\TranslationQueue */
     $queuedItems = RW\Models\TranslationQueue::getQueueItemsByProjectId($translationProjectItem->getId());
 
     $projectId = $translationProjectItem->getId();
@@ -456,10 +400,7 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
     $dom->appendChild($translations);
 
     foreach ($queuedItems as $queuedItem) {
-        list($sourceId, $__t, $__p) = RW\Models\TranslationQueue::idExplode($queuedItem->getId());
-        /** @var $translationItem RW\Models\Translation */
-        $translationItem = RW\Models\Translation::getById($sourceId);
-        $text = $translationItem->getText();
+        $text = $queuedItem->getTargetId();
 
         $cdata = $dom->createCDATASection($text);
         $t = $dom->createElement("t");
@@ -468,7 +409,7 @@ function handleOHTProject($defaultLanguage, $translationProjectItem, $oht)
         $translations->appendChild($t);
 
         $displayText = substr($text, 0, 10) . "...";
-        echo "  ===> Translate: sourceID: [$sourceId]. Text: [$displayText]\n";
+        echo "  ===> Translate: sourceID: [{$queuedItem->getId()}]. Text: [$displayText]\n";
     }
     $dom->formatOutput = true;
     file_put_contents("/tmp/{$projectId}.xml", $dom->saveXML());
@@ -591,16 +532,19 @@ function sync($namespace, $sourceMessages, $targetLanguage, $targetProvider, $li
                     $translationProjectObject->setTargetLanguage($targetLanguage);
                 }
 
-                $translationQueueItemID = RW\Models\TranslationQueue::idFactory($missingMessageKey, $targetLanguage, $targetProvider);
-                $translationQueueItem = RW\Models\TranslationQueue::getById($translationQueueItemID);
+                //$translationQueueItemID = RW\Models\TranslationQueue::idFactory($missingMessageKey, $targetLanguage, $targetProvider);
+                $translationQueueItem = RW\Models\TranslationQueue::getById($missingMessageKey);
                 if (empty($translationQueueItem)) {
                     $translationQueueItem = new RW\Models\TranslationQueue();
-                    $translationQueueItem->setId($translationQueueItemID);
+                    $translationQueueItem->setId($missingMessageKey);
                     $translationQueueItem->setStatus(RW\Models\TranslationQueue::STATUS_PENDING);
                     $translationQueueItem->setCreated(time());
                     $translationQueueItem->setModified(time());
                     $translationQueueItem->setProjectId($projectId);
-                    $translationQueueItem->setTargetId(\RW\Models\Translation::idFactory($targetLanguage, $missingMessage, $namespace));
+                    $translationQueueItem->setTargetId($missingMessage);
+                    if (!empty($namespace)) {
+                        $translationQueueItem->setNamespace($namespace);
+                    }
                     $translationQueueItem->save();
 
                     $projectItemCount++;
