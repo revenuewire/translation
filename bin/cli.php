@@ -208,17 +208,17 @@ switch ($action) {
 
         /** @var $project RW\Models\TranslationProject */
         foreach ($projects as $project) {
-            $projectData = $project->getProjectData();
             $projectId = $project->getId();
             $status = $project->getStatus();
 
             if ($status == RW\Models\TranslationProject::STATUS_PENDING) {
-                echo "Project: [{$projectId}] is [{$status}]\n";
+                echo "Project: [{$projectId}] is [{$status}]. Please run command [commit] to submit to service provider.\n";
             } else {
                 if (empty($oht['pubkey']) || empty($oht['secret'])) {
                     throw new InvalidArgumentException("Unable to continue OTH project without keys.");
                 }
 
+                $projectData = $project->getProjectData();
                 $oneHourTranslation = new RW\Services\OneHourTranslation($oht['pubkey'], $oht['secret'], $oht['sandbox']);
                 $result = $oneHourTranslation->getProjectStatus($projectData['project_id']);
 
