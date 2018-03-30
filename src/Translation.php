@@ -23,9 +23,6 @@ class Translation
     protected $marshaler;
     public $supportLanguages;
 
-    /** @var $cache Client  */
-    public $cache = null;
-    public $cachePrefix = null;
     public $defaultLang = Languages::DEFAULT_LANGUAGE_CODE;
 
     public $live = false;
@@ -91,21 +88,6 @@ class Translation
         /** @var marshaler Marshaler */
         $this->marshaler = new Marshaler();
 
-        /**
-         * Using Cache as storage of the translation
-         */
-        if (!empty($cache) && !empty($cache['host']) && !empty($cache['timeout']) && !empty($cache['port'])) {
-            $options = ['cluster' => 'redis'];
-            $this->cache = new Client(array(
-                'scheme'   => 'tcp',
-                'host'     => $cache['host'],
-                'timeout'  => $cache['timeout'],
-                'port'     => $cache['port'],
-            ), $options);
-            if (!empty($cache['prefix'])) {
-                $this->cachePrefix = $cache['prefix'];
-            }
-        }
 
         if ($this->live == true) {
             $languages = array_diff($supportLanguages, $excludeFromLiveTranslation);
@@ -185,6 +167,10 @@ class Translation
             return $messages;
         }
 
+        if ($lang === $this->defaultLang) {
+            return $messages;
+        }
+
         /**
          * If language is not in supported languages, just return original text back
          */
@@ -229,82 +215,51 @@ class Translation
             }
         }
 
-        $missingMessages = array_diff($messages, $resultMessages);
-        if ($lang == $this->defaultLang) {
-            /**
-             * If there are missing messages, wrote down to db, and return the batch
-             */
-            $batchData = [];
-            foreach ($missingMessages as $k => $v) {
-                $id = $slugTextIdMapReversed[$k];
-                $item = [
-                    'id' => $id,
-                    't' => $v,
-                    'l' => $lang,
-                ];
-                if (!empty($this->namespace)) {
-                    $item['n'] = $this->namespace;
-                }
-                $batchData[$id] = ['PutRequest' => [
-                    "Item" => $this->marshaler->marshalItem($item)
-                ]];
-            }
-            if (count($batchData) > 0) {
-                $batchChunks = array_chunk($batchData, 25);
-                foreach ($batchChunks as $chunk) {
-                    $this->db->batchWriteItem([
-                        'RequestItems' => [
-                            $this->table => $chunk
-                        ]
-                    ]);
-                }
-            }
-
-            return $messages;
-        }
+        $missingMessages = array_diff_key($messages, $resultMessages);
 
         /**
          * If it is live mode, translated and put it into cache
          */
-        if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
+        if ($this->live === true && count($missingMessages) > 0 && !in_array($lang, $this->excludeFromLiveTranslation)) {
             $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
             $targetLang = Languages::transformLanguageCodeToGTC($lang);
             $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $missingMessages);
 
-            $batchData = [];
-            foreach ($translatedMessages as $k => $v) {
-                $id = $slugTextIdMapReversed[$k];
-                $item = [
-                    'id' => $id,
-                    't' => $v,
-                    'l' => $lang,
-                ];
-                if (!empty($this->namespace)) {
-                    $item['n'] = $this->namespace;
+            if (!empty($translatedMessages)) {
+                $batchData = [];
+                foreach ($translatedMessages as $k => $v) {
+                    $id = $slugTextIdMapReversed[$k];
+                    $item = [
+                        'id' => $id,
+                        't' => $v,
+                        'l' => $lang,
+                    ];
+                    if (!empty($this->namespace)) {
+                        $item['n'] = $this->namespace;
+                    }
+                    $batchData[$id] = ['PutRequest' => [
+                        "Item" => $this->marshaler->marshalItem($item)
+                    ]];
                 }
-                $batchData[$id] = ['PutRequest' => [
-                    "Item" => $this->marshaler->marshalItem($item)
-                ]];
-            }
 
-            if (count($batchData) > 0) {
-                $batchChunks = array_chunk($batchData, 25);
-                foreach ($batchChunks as $chunk) {
-                    $this->db->batchWriteItem([
-                        'RequestItems' => [
-                            $this->table => $chunk
-                        ]
-                    ]);
+                if (count($batchData) > 0) {
+                    $batchChunks = array_chunk($batchData, 25);
+                    foreach ($batchChunks as $chunk) {
+                        $this->db->batchWriteItem([
+                            'RequestItems' => [
+                                $this->table => $chunk
+                            ]
+                        ]);
+                    }
                 }
+                return array_merge($resultMessages, $translatedMessages);
             }
-
-            return array_merge($resultMessages,$translatedMessages);
         }
 
         /**
          * If we end up nowhere, just return the original batch
          */
-        return $messages;
+        return array_merge($messages,$resultMessages);
     }
 
     /**
@@ -319,6 +274,10 @@ class Translation
     {
         if (empty($lang)) {
             $lang = $this->defaultLang;
+        }
+
+        if ($lang === $this->defaultLang) {
+            return $text;
         }
 
         /**
@@ -342,6 +301,11 @@ class Translation
          */
         $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
 
+        $cacheKey = "t_blocks_se38sxs3_" . $id;
+        if ($this->messageBlockCache === true && apcu_exists($cacheKey)) {
+            return apcu_fetch($cacheKey);
+        }
+
         /**
          * If it is not the default language
          */
@@ -353,28 +317,13 @@ class Translation
             'ConsistentRead' => false
         ));
 
+        if (!empty($result['Item'])) {
+            $data = $this->marshaler->unmarshalItem($result['Item']);
+            apcu_store($cacheKey, $data['t']);
+            return $data['t'];
+        }
+
         if (empty($result['Item'])) {
-            /**
-             * If it is the default language and we missed the db hit, this means it is the first time we had this text
-             */
-            if ($lang == $this->defaultLang) {
-                $data = [
-                    'id' => $id,
-                    't' => $text,
-                    'l' => $lang,
-                ];
-                if (!empty($this->namespace)) {
-                    $data['n'] = $this->namespace;
-                }
-                $this->db->putItem(array(
-                    'TableName' => $this->table,
-                    'Item' => $this->marshaler->marshalItem($data),
-                    'ReturnValues' => 'ALL_OLD'
-                ));
-
-                return $text;
-            }
-
             /**
              * If live mode is enabled, let's translate it and save it to db
              */
@@ -383,29 +332,27 @@ class Translation
                 $targetLang = Languages::transformLanguageCodeToGTC($lang);
                 $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
 
-                $data = [
-                    'id' => $id,
-                    't' => $translatedText,
-                    'l' => $lang,
-                ];
-                if (!empty($this->namespace)) {
-                    $data['n'] = $this->namespace;
+                if (!empty($translatedText)) {
+                    $data = [
+                        'id' => $id,
+                        't' => $translatedText,
+                        'l' => $lang,
+                    ];
+                    if (!empty($this->namespace)) {
+                        $data['n'] = $this->namespace;
+                    }
+                    $this->db->putItem(array(
+                        'TableName' => $this->table,
+                        'Item' => $this->marshaler->marshalItem($data),
+                        'ReturnValues' => 'ALL_OLD'
+                    ));
+
+                    return $translatedText;
                 }
-                $this->db->putItem(array(
-                    'TableName' => $this->table,
-                    'Item' => $this->marshaler->marshalItem($data),
-                    'ReturnValues' => 'ALL_OLD'
-                ));
-
-                return $translatedText;
             }
-
-            return $text;
         }
 
-        $data = $this->marshaler->unmarshalItem($result['Item']);
-
-        return $data['t'];
+        return $text;
     }
 
 

@@ -77,6 +77,10 @@ class GoogleCloudTranslation
      */
     public static function translate($sourceLanguage, $targetLanguage, $text)
     {
+        if (self::$client === null) {
+            return null;
+        }
+
         try {
             $pattern = '/{(.+)}/i';
             $replacement = '<span class="notranslate">{${1}}</span>';
@@ -109,6 +113,10 @@ class GoogleCloudTranslation
      */
     public static function batchTranslate($sourceLanguage, $targetLanguage, $texts)
     {
+        if (self::$client === null) {
+            return [];
+        }
+
         array_walk($texts, function (&$item1){
             $pattern = '/{(.+)}/i';
             $replacement = '<span class="notranslate">{${1}}</span>';
