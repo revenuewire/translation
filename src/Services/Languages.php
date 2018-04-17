@@ -228,7 +228,7 @@ class Languages
             "code" => "fi",
             "language" => "Finnish",
             "display" => "suomi",
-            "providers" =>['oht' => "fi-fi"],
+            "providers" =>['gct' => "fi", 'oht' => "fi-fi"],
         ],
     ];
 
@@ -265,7 +265,7 @@ class Languages
     public static function transformLanguageCodeToGTC($lang)
     {
         if (empty(self::$supportedLanguages[$lang]['providers']['gct'])) {
-           return false;
+            return false;
         }
 
         return self::$supportedLanguages[$lang]['providers']['gct'];
@@ -318,13 +318,13 @@ class Languages
         ];
         foreach (self::$supportedLanguages as $k => $v) {
             $mark[] = "| " . implode(' | ', [
-                $k,
-                isset($v['providers']['gct']) ? $v['providers']['gct'] : "N/A",
-                isset($v['providers']['oht']) ? $v['providers']['oht'] : "N/A",
-                $v['language'],
-                $v['display'],
-                !empty($v['comments']) ? $v['comments'] : "",
-            ]) . " | ";
+                    $k,
+                    isset($v['providers']['gct']) ? $v['providers']['gct'] : "N/A",
+                    isset($v['providers']['oht']) ? $v['providers']['oht'] : "N/A",
+                    $v['language'],
+                    $v['display'],
+                    !empty($v['comments']) ? $v['comments'] : "",
+                ]) . " | ";
         }
         return implode("\n", $mark);
     }
