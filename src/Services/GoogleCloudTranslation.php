@@ -50,6 +50,7 @@ class GoogleCloudTranslation
         "th",
         "tr",
         "vi",
+        "fi",
     ];
 
     /**
@@ -82,9 +83,9 @@ class GoogleCloudTranslation
         }
 
         try {
-            $pattern = '/{(.+)}/i';
-            $replacement = '<span class="notranslate">{${1}}</span>';
-            $text = preg_replace($pattern, $replacement, $text);
+            $patterns[] = '/{(.+)}/i';
+            $replacements[] = '<span class="notranslate">{${1}}</span>';
+            $text = preg_replace($patterns, $replacements, $text);
 
             $translation = self::$client->translate($text, [
                 'source ' => $sourceLanguage,
@@ -96,7 +97,7 @@ class GoogleCloudTranslation
             $pattern = '/<span class="notranslate">(.+)<\/span>/i';
             $replacement = '${1}';
 
-            return preg_replace($pattern, $replacement, $translation['text']);
+            return html_entity_decode(preg_replace($pattern, $replacement, $translation['text']), ENT_COMPAT | ENT_HTML401 | ENT_QUOTES);
         } catch (\Exception $e) {
             return $text;
         }
@@ -118,9 +119,9 @@ class GoogleCloudTranslation
         }
 
         array_walk($texts, function (&$item1){
-            $pattern = '/{(.+)}/i';
-            $replacement = '<span class="notranslate">{${1}}</span>';
-            $item1 = preg_replace($pattern, $replacement, $item1);
+            $patterns[] = '/{(.+)}/i';
+            $replacements[] = '<span class="notranslate">{${1}}</span>';
+            $item1 = preg_replace($patterns, $replacements, $item1);
         });
 
         $messages = [];
@@ -148,6 +149,7 @@ class GoogleCloudTranslation
             $pattern = '/<span class="notranslate">(.+)<\/span>/i';
             $replacement = '${1}';
             $item1 = preg_replace($pattern, $replacement, $item1);
+            $item1 = html_entity_decode($item1, ENT_COMPAT | ENT_HTML401 | ENT_QUOTES);
         });
 
         return $messages;
