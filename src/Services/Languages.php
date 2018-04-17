@@ -228,7 +228,7 @@ class Languages
             "code" => "fi",
             "language" => "Finnish",
             "display" => "suomi",
-            "providers" =>['oht' => "fi-fi"],
+            "providers" =>['gct' => "fi", 'oht' => "fi-fi"],
         ],
     ];
 
