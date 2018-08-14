@@ -83,10 +83,7 @@ class GoogleCloudTranslation
         }
 
         try {
-            $patterns[] = '/{(.+)}/i';
-            $replacements[] = '<span class="notranslate">{${1}}</span>';
-            $text = preg_replace($patterns, $replacements, $text);
-
+            $text = str_replace(["{", "}"], ['<span class="notranslate">{', '}</span>'], $text);
             $translation = self::$client->translate($text, [
                 'source ' => $sourceLanguage,
                 'target' => $targetLanguage,
@@ -119,9 +116,7 @@ class GoogleCloudTranslation
         }
 
         array_walk($texts, function (&$item1){
-            $patterns[] = '/{(.+)}/i';
-            $replacements[] = '<span class="notranslate">{${1}}</span>';
-            $item1 = preg_replace($patterns, $replacements, $item1);
+            $item1 = str_replace(["{", "}"], ['<span class="notranslate">{', '}</span>'], $item1);
         });
 
         $messages = [];
