@@ -91,10 +91,8 @@ class GoogleCloudTranslation
                 'format' => 'html'
             ]);
 
-            $pattern = '/<span class="notranslate">(.+)<\/span>/i';
-            $replacement = '${1}';
-
-            return html_entity_decode(preg_replace($pattern, $replacement, $translation['text']), ENT_COMPAT | ENT_HTML401 | ENT_QUOTES);
+            $translatedText = str_replace(['<span class="notranslate">{', '}</span>'], ["{", "}"], $translation['text']);
+            return html_entity_decode($translatedText, ENT_COMPAT | ENT_HTML401 | ENT_QUOTES);
         } catch (\Exception $e) {
             return $text;
         }
@@ -141,9 +139,7 @@ class GoogleCloudTranslation
         }
 
         array_walk($messages, function (&$item1){
-            $pattern = '/<span class="notranslate">(.+)<\/span>/i';
-            $replacement = '${1}';
-            $item1 = preg_replace($pattern, $replacement, $item1);
+            $item1 = str_replace(['<span class="notranslate">{', '}</span>'], ["{", "}"], $item1);
             $item1 = html_entity_decode($item1, ENT_COMPAT | ENT_HTML401 | ENT_QUOTES);
         });
 
