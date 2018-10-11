@@ -1,9 +1,6 @@
 <?php
 namespace RW;
 
-use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
-use Predis\Client;
 use RW\Services\GoogleCloudTranslation;
 use RW\Services\Languages;
 
@@ -16,39 +13,41 @@ class Translation
      * The max length you want to put for key. Note: If the key length is very small, you might run into collision.
      * If it is too big, you wasted space.
      */
-    const keyLength = 50;
-
-    public $dynamoSettings = array();
-    protected $db = null;
-    protected $marshaler;
+    const MAX_KEY_LENGTH = 50;
     public $supportLanguages;
-
     public $defaultLang = Languages::DEFAULT_LANGUAGE_CODE;
-
     public $live = false;
-    public $excludeFromLiveTranslation = [];
-
     public $namespace = "";
+    const CACHE_KEY = "t_sxs3_";
 
-    public $messageBlocks = [];
-    public $messageBlockCache = true;
+    /**
+     * ID factory
+     *
+     * @param $lang
+     * @param $text
+     *
+     * @return string
+     */
+    public static function idFactory($lang, $text, $namespace = "")
+    {
+        $text = trim($text);
+        $namespace = Utils::slugify($namespace);
+        $id = strlen($text) > self::MAX_KEY_LENGTH ?
+            substr($text, 0, self::MAX_KEY_LENGTH) . hash('crc32', substr($text, self::MAX_KEY_LENGTH+1))
+            : $text;
+
+        return hash('ripemd160', implode('|:|', array($lang, $id, $namespace)));
+    }
 
     /**
      * Translation constructor.
      *
-     * @param null $dynamoSettings
      * @param array $supportLanguages
      * @param null $defaultLang
      * @param null $gct
-     * @param array $excludeFromLiveTranslation
      * @param string $namespace
      */
-    function __construct($dynamoSettings = null,
-                         $supportLanguages = ['en'],
-                         $defaultLang = null,
-                         $gct = null,
-                         $excludeFromLiveTranslation = [],
-                         $namespace = "")
+    function __construct($supportLanguages = ['en'], $defaultLang = null, $gct = null, $namespace = "")
     {
         if (!empty($defaultLang)) {
             $this->defaultLang = $defaultLang;
@@ -73,42 +72,14 @@ class Translation
             GoogleCloudTranslation::init($gct['project'], $gct['key']);
             $this->live = true;
         }
-        $this->excludeFromLiveTranslation = $excludeFromLiveTranslation;
-
-        /**
-         * Using DynamoDB as storage of the translation
-         */
-        if (!empty($dynamoSettings) && !empty($dynamoSettings['region'])
-            && !empty($dynamoSettings['version']) && !empty($dynamoSettings['table'])) {
-            /** @var $db DynamoDbClient */
-            $this->db = new DynamoDbClient($dynamoSettings);
-            $this->table = $dynamoSettings['table'];
-        }
-
-        /** @var marshaler Marshaler */
-        $this->marshaler = new Marshaler();
-
 
         if ($this->live == true) {
-            $languages = array_diff($supportLanguages, $excludeFromLiveTranslation);
             //check if we can support the given languages
-            foreach ($languages as $language) {
+            foreach ($supportLanguages as $language) {
                 if (Languages::transformLanguageCodeToGTC($language) === false){
                     throw new \InvalidArgumentException("Unable to support the language translation in live mode. [$language].");
                 }
             }
-        }
-
-        if ($this->db === null && !empty($excludeFromLiveTranslation)) {
-            //effectively disabled the translation
-            $this->supportLanguages = [];
-        }
-
-        /**
-         * If live mode is true, and both db and cache are not available, then disable the translation
-         */
-        if ($this->live == true && $this->db === null) {
-            $this->supportLanguages = [];
         }
     }
 
@@ -130,22 +101,15 @@ class Translation
     /**
      * Init the translation service
      *
-     * @param null $dynamoSettings
      * @param array $supportLanguages
      * @param null $defaultLang
      * @param null $gct
-     * @param array $excludeFromLiveTranslation
      * @param string $namespace
      * @return null|Translation
      */
-    public static function init($dynamoSettings = null,
-                                $supportLanguages = ['en'],
-                                $defaultLang = null,
-                                $gct = null,
-                                $excludeFromLiveTranslation = [],
-                                $namespace = "")
+    public static function init($supportLanguages = ['en'], $defaultLang = null, $gct = null, $namespace = "")
     {
-        self::$translator = new Translation($dynamoSettings, $supportLanguages, $defaultLang, $gct, $excludeFromLiveTranslation, $namespace);
+        self::$translator = new Translation($supportLanguages, $defaultLang, $gct, $namespace);
         return self::$translator;
     }
 
@@ -179,87 +143,43 @@ class Translation
             return $messages;
         }
 
-        $batchKeys = [];
         $slugTextIdMap = [];
-        $slugTextIdMapReversed = [];
+        $missingMessages = [];
+        $translatedMessages = [];
         foreach ($messages as $textId => $text) {
             $text = trim($text);
             if (empty($text)) {
                 throw new \InvalidArgumentException("Text cannot be empty.");
             }
-            $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
+            $id = self::idFactory($lang, $text, $this->namespace);
+            $cacheKey = self::CACHE_KEY . $id;
+
             if (empty($slugTextIdMap[$id])) {
-                $batchKeys[] = ['id' => $this->marshaler->marshalValue($id)];
                 $slugTextIdMap[$id] = $textId;
             }
-            $slugTextIdMapReversed[$textId] = $id;
-        }
-
-        $batchChunks = array_chunk($batchKeys, 50);
-        $resultMessages = [];
-        foreach ($batchChunks as $chunk) {
-            $results = $this->db->batchGetItem([
-                'RequestItems' => [
-                    $this->table => [
-                        "Keys" => $chunk,
-                        'ConsistentRead' => false,
-                        'ProjectionExpression' => 'id, t',
-                    ]
-                ]
-            ]);
-
-            foreach ($results['Responses'][$this->table] as $response) {
-                $id = $response['id']['S'];
-                $text = $response['t']['S'];
-                $resultMessages[$slugTextIdMap[$id]] = $text;
+            if (!apcu_exists($cacheKey)) {
+                $missingMessages[$id] = $text;
+            } else {
+                $translatedText = apcu_fetch($cacheKey);
+                $translatedMessages[$slugTextIdMap[$id]] = $translatedText;
             }
         }
 
-        $missingMessages = array_diff_key($messages, $resultMessages);
-
-        /**
-         * If it is live mode, translated and put it into cache
-         */
-        if ($this->live === true && count($missingMessages) > 0 && !in_array($lang, $this->excludeFromLiveTranslation)) {
+        if (count($missingMessages) > 0) {
             $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
             $targetLang = Languages::transformLanguageCodeToGTC($lang);
-            $translatedMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $missingMessages);
-
-            if (!empty($translatedMessages)) {
-                $batchData = [];
-                foreach ($translatedMessages as $k => $v) {
-                    $id = $slugTextIdMapReversed[$k];
-                    $item = [
-                        'id' => $id,
-                        't' => $v,
-                        'l' => $lang,
-                    ];
-                    if (!empty($this->namespace)) {
-                        $item['n'] = $this->namespace;
-                    }
-                    $batchData[$id] = ['PutRequest' => [
-                        "Item" => $this->marshaler->marshalItem($item)
-                    ]];
-                }
-
-                if (count($batchData) > 0) {
-                    $batchChunks = array_chunk($batchData, 25);
-                    foreach ($batchChunks as $chunk) {
-                        $this->db->batchWriteItem([
-                            'RequestItems' => [
-                                $this->table => $chunk
-                            ]
-                        ]);
-                    }
-                }
-                return array_merge($resultMessages, $translatedMessages);
+            $translatedMissingMessages = GoogleCloudTranslation::batchTranslate($sourceLang, $targetLang, $missingMessages);
+            foreach ($translatedMissingMessages as $id => $translatedText) {
+                $cacheKey = self::CACHE_KEY . $id;
+                apcu_store($cacheKey, $translatedText);
+                $translatedMessages[$slugTextIdMap[$id]] = $translatedText;
             }
         }
 
         /**
          * If we end up nowhere, just return the original batch
          */
-        return array_merge($messages,$resultMessages);
+        return array_replace($messages, $translatedMessages);
     }
 
     /**
@@ -299,131 +219,21 @@ class Translation
         /**
          * Always check cache first
          */
-        $id = \RW\Models\Translation::idFactory($lang, $text, $this->namespace);
-
-        $cacheKey = "t_blocks_se38sxs3_" . $id;
-        if ($this->messageBlockCache === true && apcu_exists($cacheKey)) {
+        $id = self::idFactory($lang, $text, $this->namespace);
+        $cacheKey = self::CACHE_KEY . $id;
+        if (apcu_exists($cacheKey)) {
             return apcu_fetch($cacheKey);
         }
 
-        /**
-         * If it is not the default language
-         */
-        $result = $this->db->getItem(array(
-            'TableName' => $this->table,
-            'Key' => array(
-                'id' => array('S' => $id)
-            ),
-            'ConsistentRead' => false
-        ));
+        $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
+        $targetLang = Languages::transformLanguageCodeToGTC($lang);
+        $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
 
-        if (!empty($result['Item'])) {
-            $data = $this->marshaler->unmarshalItem($result['Item']);
-            apcu_store($cacheKey, $data['t']);
-            return $data['t'];
-        }
-
-        if (empty($result['Item'])) {
-            /**
-             * If live mode is enabled, let's translate it and save it to db
-             */
-            if ($this->live === true && !in_array($lang, $this->excludeFromLiveTranslation)) {
-                $sourceLang = Languages::transformLanguageCodeToGTC($this->defaultLang);
-                $targetLang = Languages::transformLanguageCodeToGTC($lang);
-                $translatedText = GoogleCloudTranslation::translate($sourceLang, $targetLang, $text);
-
-                if (!empty($translatedText)) {
-                    $data = [
-                        'id' => $id,
-                        't' => $translatedText,
-                        'l' => $lang,
-                    ];
-                    if (!empty($this->namespace)) {
-                        $data['n'] = $this->namespace;
-                    }
-                    $this->db->putItem(array(
-                        'TableName' => $this->table,
-                        'Item' => $this->marshaler->marshalItem($data),
-                        'ReturnValues' => 'ALL_OLD'
-                    ));
-
-                    return $translatedText;
-                }
-            }
+        if (!empty($translatedText)) {
+            apcu_store($cacheKey, $translatedText);
+            return $translatedText;
         }
 
         return $text;
-    }
-
-
-    /**
-     * Set message file
-     *
-     * @param $file
-     * @throws \Exception
-     */
-    public function setMessageFile($file)
-    {
-        if (!file_exists($file)){
-            throw new \Exception("Unable to locate message file.");
-        }
-
-        $cacheKey = "t_blocks_Mj69VaY9UEB";
-        if ($this->messageBlockCache === true && apcu_exists($cacheKey)) {
-            $this->messageBlocks = apcu_fetch($cacheKey);
-        } else {
-            $messageBlocks = \Symfony\Component\Yaml\Yaml::parse(file_get_contents($file));
-            foreach ($messageBlocks as $k => $blocks) {
-                $this->messageBlocks[$k] = [];
-                foreach ($blocks as $block) {
-                    $this->messageBlocks[$k][$block['key']] = $block['text'];
-                }
-            }
-            apcu_store($cacheKey, $this->messageBlocks);
-        }
-    }
-
-    /**
-     * Enable cache. (only disable it on local for testing)
-     *
-     * @param bool $enableCache
-     */
-    public function setMessageBlockCache($enableCache = true)
-    {
-        $this->messageBlockCache = $enableCache;
-    }
-
-    /**
-     * Load blocks of translation texts
-     *
-     * @param $blocks
-     * @param null $language
-     * @return array
-     * @throws \Exception
-     */
-    public function load($blocks, $language = null)
-    {
-        if (empty($this->messageBlocks)) {
-            throw new \Exception("Load method only works when init message file has been setup.");
-        }
-        $messages = [];
-        foreach ($blocks as $blockName) {
-            if (!empty($this->messageBlocks[$blockName])) {
-                $messages = array_merge($messages, $this->messageBlocks[$blockName]);
-            }
-        }
-
-        $cacheKey = "t_blocks_7Xxb9IRqOj_" . implode("-", $blocks) . "-" . $language;
-        if ($this->messageBlockCache === true
-            && !empty($language)
-            && $language !== $this->defaultLang
-            && apcu_exists($cacheKey)) {
-            $translatedMessages = apcu_fetch($cacheKey);
-        } else {
-            $translatedMessages = $this->batchTranslate($messages, $language);
-            apcu_store($cacheKey, $translatedMessages);
-        }
-
-        return $translatedMessages;
     }
 }

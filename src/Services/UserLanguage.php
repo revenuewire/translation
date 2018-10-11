@@ -4,6 +4,11 @@
  */
 namespace RW\Services;
 
+/**
+ * Class UserLanguage
+ * @package RW\Services
+ * @codeCoverageIgnore
+ */
 class UserLanguage
 {
     public static $lang = null;

@@ -5,7 +5,11 @@
 
 namespace RW\Services;
 
-
+/**
+ * Class Languages
+ * @package RW\Services
+ * @codeCoverageIgnore
+ */
 class Languages
 {
     const DEFAULT_LANGUAGE_CODE = "en";

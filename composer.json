@@ -16,8 +16,6 @@
     }
   },
   "require": {
-    "aws/aws-sdk-php": "^3.52",
-    "predis/predis": "^1.1",
     "onehourtranslation/api2": "^1.0",
     "google/cloud": "^0.28.0",
     "symfony/yaml": "3.2"
@@ -28,5 +26,6 @@
     }
   },
   "require-dev": {
+    "phpunit/phpunit": "^6.5"
   }
 }

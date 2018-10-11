@@ -9,10 +9,6 @@
 class TranslationTest extends \PHPUnit\Framework\TestCase
 {
     public static $gct;
-    public static $dynamoDB;
-
-    /** @var $cacheClient \Predis\Client */
-    public static $cacheClient;
 
     /**
      * Set up
@@ -23,16 +19,6 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
             'project' => getenv('GCT_PROJECT'),
             'key' => getenv('GCT_KEY'),
         ];
-
-        self::$dynamoDB = [
-            "region" => "us-west-1",
-            "version" => "2012-08-10",
-            "table" => "translation_test",
-        ];
-    }
-
-    public static function tearDownAfterClass()
-    {
     }
 
     /**
@@ -42,10 +28,41 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     {
         $supportLangugaes = ["en", "zh"];
         $defaultLang = "en";
-        $exclude = [];
-
-        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude);
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct);
         $this->assertSame("你好", $translator->translate('hello', "zh"));
+    }
+
+    /**
+     * translation default language
+     */
+    public function testTranslateDefault()
+    {
+        $supportLangugaes = ["en", "zh"];
+        $defaultLang = "en";
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct);
+        $this->assertSame("hello world", $translator->translate("hello world"));
+    }
+
+    /**
+     * translation unsupported language
+     */
+    public function testTranslateUnsupportedLaguage()
+    {
+        $supportLangugaes = ["en", "zh"];
+        $defaultLang = "en";
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct);
+        $this->assertSame("", $translator->translate("", "zh"));
+    }
+
+    /**
+     * translation unsupported language
+     */
+    public function testTranslateEmptyText()
+    {
+        $supportLangugaes = ["en", "zh"];
+        $defaultLang = "en";
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct);
+        $this->assertSame("hello world", $translator->translate("hello world", "vi"));
     }
 
     /**
@@ -55,16 +72,13 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     {
         $supportLangugaes = ["en", "zh"];
         $defaultLang = "en";
-        $exclude = [];
-
         $texts = [
             'hello' => "Hello",
             "world" => "World",
         ];
 
-        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude);
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct);
         $translatedTexts = $translator->batchTranslate($texts, "zh");
-
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);
     }
 
@@ -75,14 +89,13 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     {
         $supportLangugaes = ["en", "zh"];
         $defaultLang = "en";
-        $exclude = [];
 
         $texts = [
             'hello' => "Hello",
             "world" => "World",
         ];
 
-        $translator = new \RW\Translation(null, $supportLangugaes, $defaultLang, self::$gct, $exclude, "unittest1");
+        $translator = new \RW\Translation($supportLangugaes, $defaultLang, self::$gct, "unittest1");
         $translatedTexts = $translator->batchTranslate($texts, "zh");
 
         $this->assertSame(['hello' => "你好", "world" => "世界"], $translatedTexts);

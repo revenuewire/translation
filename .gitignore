@@ -17,3 +17,5 @@ vendor
 composer.lock
 test.sh
 messages.yaml
+.env
+build

@@ -4,6 +4,7 @@ use com\OHT\API\OHTAPI;
 
 /**
  * Class OneHourTranslation
+ * @codeCoverageIgnore
  */
 class OneHourTranslation
 {
