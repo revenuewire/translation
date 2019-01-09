@@ -296,7 +296,7 @@ class Languages
     {
         if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $locale = \Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
-            if ($locale == 'zh') {
+            if ($locale == 'zh' || $locale === false) {
                 $locales = explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
                 $locale = array_shift($locales);
             }
