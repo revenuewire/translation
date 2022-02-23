@@ -14,7 +14,7 @@
     "aws/aws-sdk-php": "^3.23",
     "predis/predis": "^1.1",
     "onehourtranslation/api2": "^1.0",
-    "google/cloud": "^0.28.0"
+    "google/cloud": "^0.175.0"
   },
   "autoload": {
     "psr-4": {
