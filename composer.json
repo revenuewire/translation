@@ -10,14 +10,9 @@
       "email": "swang@revenuewire.com"
     }
   ],
-  "config": {
-    "platform": {
-      "php": "7.0.0"
-    }
-  },
   "require": {
     "onehourtranslation/api2": "^1.0",
-    "google/cloud": "^0.28.0",
+    "google/cloud": "^0.196",
     "symfony/yaml": "3.2"
   },
   "autoload": {
