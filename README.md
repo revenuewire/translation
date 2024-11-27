@@ -208,3 +208,11 @@ Most language code parameters conform to ISO-639-1 identifiers, except where not
 | tr | tr | tr-tr | Turkish | Türkçe |  |
 | vi | vi | vi-vn | Vietnamese | Tiếng Việt |  |
 | fi | N/A | fi-fi | Finnish | suomi |  |
+
+## Unit Test
+1. edit docker-compose.yaml file. Replace GCT_KEY and GCT_PROJECT place holder with your real key and project.
+2. rm -rf vendor/ composer.lock
+3. ./composer.phar install  --ignore-platform-reqs 
+4. docker-compose up
+
+

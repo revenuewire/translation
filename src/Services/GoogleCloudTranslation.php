@@ -6,7 +6,7 @@
 namespace RW\Services;
 
 
-use Google\Cloud\Translate\TranslateClient;
+use Google\Cloud\Translate\V2\TranslateClient;
 
 class GoogleCloudTranslation
 {
@@ -60,10 +60,12 @@ class GoogleCloudTranslation
      */
     public static function init($projectId, $key)
     {
+
         self::$client = new TranslateClient([
-            'projectId' => $projectId,
-            'key' => $key
-        ]);
+                'projectId' => $projectId,
+                'key' => $key
+            ]
+        );
     }
 
     /**

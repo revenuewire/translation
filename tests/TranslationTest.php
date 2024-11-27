@@ -18,7 +18,7 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
     /**
      * Set up
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass():void
     {
         self::$gct = [
             'project' => getenv('GCT_PROJECT'),
@@ -48,7 +48,7 @@ class TranslationTest extends \PHPUnit\Framework\TestCase
         ), $options);
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass():void
     {
         self::$cacheClient->flushall();
     }

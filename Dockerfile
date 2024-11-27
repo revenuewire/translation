@@ -1,3 +1,7 @@
-FROM revenuewire/docker-php7-xenial:latest
+FROM revenuewire/docker-php-alpine:1.0.3 
 
-RUN apt-get install php-xdebug -y
+RUN apk update
+RUN apk add php83-dom php83-tokenizer php83-fileinfo php83-mbstring php83-pecl-xdebug php83-xmlwriter
+
+COPY ./ /var/src
+
