@@ -14,3 +14,7 @@ run
 supervise/
 .idea
 vendor
+.phpunit.result.cache
+composer.phar
+composer.lock
+.phpunit.cache/

@@ -33,6 +33,8 @@ class Translation
 
     public $namespace = "";
 
+    public $table;
+
     /**
      * Translation constructor.
      *

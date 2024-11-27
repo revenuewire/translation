@@ -11,10 +11,10 @@
     }
   ],
   "require": {
-    "aws/aws-sdk-php": "^3.23",
-    "predis/predis": "^1.1",
+    "aws/aws-sdk-php": "^3.288.1",
+    "predis/predis": "^2.0.0",
     "onehourtranslation/api2": "^1.0",
-    "google/cloud": "^0.175.0"
+    "google/cloud": "^0.257"
   },
   "autoload": {
     "psr-4": {
@@ -22,7 +22,6 @@
     }
   },
   "require-dev": {
-    "phpunit/phpunit": "^6.2",
-    "php-coveralls/php-coveralls": "^1.0"
+    "phpunit/phpunit": "^11"
   }
 }
